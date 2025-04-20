@@ -1,0 +1,59 @@
+[build-system]
+requires = ["uv"]
+build-backend = "uv._build_backend"
+  
+# Project metadata and dependencies via PEP 621 for uv package manager
+[project]
+name = "pdf-ocr-pipeline"
+version = "0.1.0"
+description = "A tool to extract text from PDF documents using OCR"
+readme = "README.md"
+readme-content-type = "text/markdown"
+authors = [ { name = "PDF OCR Pipeline Contributors", email = "your.email@example.com" } ]
+license = { text = "MIT" }
+keywords = ["pdf", "ocr", "tesseract", "poppler", "openai", "gpt-4"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.6",
+  "Programming Language :: Python :: 3.7",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Topic :: Text Processing :: OCR",
+  "Topic :: Utilities",
+]
+dependencies = ["openai>=1.75.0"]
+  
+[project.scripts]
+pdf-ocr = "pdf_ocr_pipeline.cli:main"
+pdf-ocr-summarize = "pdf_ocr_pipeline.summarize:main"
+  
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0.0",
+  "pytest-cov>=3.0.0",
+  "black>=22.1.0",
+  "flake8>=4.0.1",
+  "mypy>=0.931",
+  "tox>=3.24.5",
+  "build>=0.7.0",
+  "twine>=4.0.0",
+]
+[tool.black]
+line-length = 88
+target-version = ['py36', 'py37', 'py38', 'py39']
+include = '\.pyi?$'
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = ["E203"]
