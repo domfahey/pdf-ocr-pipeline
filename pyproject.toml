@@ -1,11 +1,12 @@
 [build-system]
-requires = ["uv"]
-build-backend = "uv._build_backend"
+requires = ["flit_core>=3.8.0"]
+build-backend = "flit_core.buildapi"
   
 # Project metadata and dependencies via PEP 621 for uv package manager
 [project]
 name = "pdf-ocr-pipeline"
 version = "0.1.0"
+requires-python = ">=3.8"
 description = "A tool to extract text from PDF documents using OCR"
 readme = "README.md"
 readme-content-type = "text/markdown"
@@ -17,8 +18,6 @@ classifiers = [
   "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.6",
-  "Programming Language :: Python :: 3.7",
   "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
@@ -41,6 +40,9 @@ dev = [
   "tox>=3.24.5",
   "build>=0.7.0",
   "twine>=4.0.0",
+  # Pin to <3.6 so we retain Python 3.8 compatibility (pre‑commit 3.6+
+  # requires Python >=3.9)
+  "pre-commit>=3.5.0,<3.6",
 ]
 [tool.black]
 line-length = 88
@@ -53,7 +55,12 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
+files = ["src/pdf_ocr_pipeline"]
+ignore_missing_imports = true
 
 [tool.flake8]
 max-line-length = 88
-extend-ignore = ["E203"]
+# Ignore E203 (black compatibility) and E501 (line length) because
+# our default prompt string intentionally includes long lines and
+# black's formatting keeps them as-is.
+extend-ignore = "E203,E501"

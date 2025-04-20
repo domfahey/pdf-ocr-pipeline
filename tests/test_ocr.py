@@ -56,10 +56,11 @@ class TestRunCmd(unittest.TestCase):
         missing_exc.filename = "test_command"
         self.mock_run.side_effect = missing_exc
 
-        with patch("sys.exit") as mock_exit:
+        from pdf_ocr_pipeline.errors import MissingBinaryError
+
+        with self.assertRaises(MissingBinaryError):
             run_cmd(["test_command"])
-            self.mock_logger.error.assert_called_once()
-            mock_exit.assert_called_once_with(1)
+        self.mock_logger.error.assert_called_once()
 
 
 @patch("pdf_ocr_pipeline.ocr.run_cmd")
@@ -112,18 +113,11 @@ class TestOcrPdf(unittest.TestCase):
         pdftoppm_error = subprocess.CalledProcessError(returncode=1, cmd=["pdftoppm"])
         mock_run_cmd.side_effect = pdftoppm_error
 
-        # Patch sys.exit to prevent actual exit
-        with patch("sys.exit") as mock_exit:
-            try:
-                ocr_pdf(self.sample_pdf)
-            except UnboundLocalError:
-                # We expect an UnboundLocalError since we're mocking an exception
-                # that would normally cause an exit
-                pass
+        from pdf_ocr_pipeline.errors import OcrError
 
-            # Assertions on what happened before the exit
-            self.mock_logger.error.assert_called_once()
-            mock_exit.assert_called_once_with(1)
+        with self.assertRaises(OcrError):
+            ocr_pdf(self.sample_pdf)
+        self.mock_logger.error.assert_called_once()
 
     def test_ocr_pdf_tesseract_error(self, mock_run_cmd):
         """Test ocr_pdf function when tesseract fails."""
@@ -141,18 +135,11 @@ class TestOcrPdf(unittest.TestCase):
         # Set up side effect sequence: pdftoppm succeeds, tesseract fails
         mock_run_cmd.side_effect = [ppm_result, tesseract_error]
 
-        # Test function with exit mocked
-        with patch("sys.exit") as mock_exit:
-            try:
-                ocr_pdf(self.sample_pdf)
-            except UnboundLocalError:
-                # We expect an UnboundLocalError since we're mocking an exception
-                # that would normally cause an exit
-                pass
+        from pdf_ocr_pipeline.errors import OcrError
 
-            # Assertions on what happened before the exit
-            self.mock_logger.error.assert_called_once()
-            mock_exit.assert_called_once_with(2)
+        with self.assertRaises(OcrError):
+            ocr_pdf(self.sample_pdf)
+        self.mock_logger.error.assert_called_once()
 
     def test_ocr_pdf_no_stdout(self, mock_run_cmd):
         """Test ocr_pdf function when pdftoppm stdout is None."""
@@ -166,17 +153,11 @@ class TestOcrPdf(unittest.TestCase):
 
         mock_run_cmd.return_value = ppm_result
 
-        # Test function with exit mocked
-        with patch("sys.exit") as mock_exit:
-            try:
-                ocr_pdf(self.sample_pdf)
-            except UnboundLocalError:
-                # We expect an UnboundLocalError since we're mocking a condition
-                # that would normally cause an exit
-                pass
+        from pdf_ocr_pipeline.errors import OcrError
 
-            self.mock_logger.error.assert_called_once()
-            mock_exit.assert_called_once_with(1)
+        with self.assertRaises(OcrError):
+            ocr_pdf(self.sample_pdf)
+        self.mock_logger.error.assert_called_once()
 
 
 if __name__ == "__main__":

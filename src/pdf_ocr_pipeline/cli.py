@@ -11,14 +11,16 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .ocr import ocr_pdf
+from .errors import PipelineError
 
 try:
     from .config import _config
 except ImportError:
     _config = {}
 
-# Configure basic logging for library and CLI use
-logging.basicConfig(format="%(levelname)s: %(message)s", level=logging.INFO)
+"""
+Logging is configured at runtime to default to DEBUG level with detailed formatting.
+"""
 logger = logging.getLogger(__name__)
 
 
@@ -35,9 +37,18 @@ def main() -> None:
     """
     # Logging is configured at module load; adjust level based on verbosity
 
+    # Configure detailed logging (default DEBUG)
+    logging.basicConfig(
+        format="%(asctime)s %(name)s %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+        level=logging.DEBUG,
+    )
+    # Load OCR defaults from config or fallback
     # Load OCR defaults from config or fallback
     default_dpi = int(_config.get("dpi", 600))
     default_lang = _config.get("lang", "eng")
+    # Verbose default from config (override with -v flag)
+    default_verbose = bool(_config.get("verbose", False))
     parser = argparse.ArgumentParser(
         description="OCR PDF(s) to JSON on stdout",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -55,48 +66,65 @@ def main() -> None:
         "-l", "--lang", default=default_lang, help="tesseract language code"
     )
     parser.add_argument(
-        "-v", "--verbose", action="store_true", help="enable verbose output"
+        "-v",
+        "--verbose",
+        action="store_true",
+        default=default_verbose,
+        help="enable verbose output",
     )
     args = parser.parse_args()
 
-    # Configure verbosity
+    # Verbose flag is retained but default logging is already DEBUG
     if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-        logger.debug("Verbose mode enabled")
+        logger.debug("Verbose flag enabled (logging already at DEBUG level)")
 
-    # Check for file existence
-    for pdf_path in args.pdfs:
-        if not pdf_path.is_file():
-            logger.error("File not found: %s", pdf_path)
-            sys.exit(1)
-
-    # Process files concurrently, but preserve input order in results
-    results = []
-    # Submit OCR tasks
-    with ThreadPoolExecutor() as executor:
-        futures = {
-            executor.submit(ocr_pdf, pdf_path, args.dpi, args.lang): pdf_path
-            for pdf_path in args.pdfs
-        }
-        # Collect results in completion order, then reorder
-        completed = {}
-        for future in as_completed(futures):
-            pdf_path = futures[future]
-            try:
-                text = future.result()
-                completed[pdf_path] = {"file": pdf_path.name, "ocr_text": text}
-            except SystemExit:
-                # Missing binary is fatal
-                raise
-            except Exception as e:
-                logger.error("Error processing %s: %s", pdf_path, e)
-                completed[pdf_path] = {"file": pdf_path.name, "error": str(e)}
-        # Preserve original order
+    try:
+        # Check for file existence
         for pdf_path in args.pdfs:
-            results.append(completed[pdf_path])
+            if not pdf_path.is_file():
+                raise PipelineError(f"File not found: {pdf_path}")
 
-    # Output results as JSON array
-    print(json.dumps(results, ensure_ascii=False, indent=2 if args.verbose else None))
+        # ------------------------------------------------------------------
+        # Parallel OCR
+        # ------------------------------------------------------------------
+        results = []
+        with ThreadPoolExecutor() as executor:
+            futures = {
+                executor.submit(ocr_pdf, pdf_path, args.dpi, args.lang): pdf_path
+                for pdf_path in args.pdfs
+            }
+
+            completed = {}
+            for future in as_completed(futures):
+                pdf_path = futures[future]
+                try:
+                    text = future.result()
+                    completed[pdf_path] = {
+                        "file": pdf_path.name,
+                        "ocr_text": text,
+                    }
+                except PipelineError as exc:
+                    logger.error("Error processing %s: %s", pdf_path, exc)
+                    completed[pdf_path] = {
+                        "file": pdf_path.name,
+                        "error": str(exc),
+                    }
+                except Exception as e:
+                    logger.error("Error processing %s: %s", pdf_path, e)
+                    completed[pdf_path] = {"file": pdf_path.name, "error": str(e)}
+
+            for pdf_path in args.pdfs:
+                results.append(completed[pdf_path])
+
+        print(
+            json.dumps(
+                results, ensure_ascii=False, indent=2 if args.verbose else None
+            )
+        )
+
+    except PipelineError as exc:
+        logger.error(str(exc))
+        sys.exit(1)
 
 
 if __name__ == "__main__":
