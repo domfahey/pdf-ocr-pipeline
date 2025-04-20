@@ -53,6 +53,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+ .mypy_cache/
 
 # IDE specific files
 .idea/
