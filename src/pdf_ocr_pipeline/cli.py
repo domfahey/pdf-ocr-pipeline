@@ -12,6 +12,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .ocr import ocr_pdf
 from .errors import PipelineError
+from .types import OcrResult
+from .settings import settings
 
 try:
     from .config import _config
@@ -43,12 +45,10 @@ def main() -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
         level=logging.DEBUG,
     )
-    # Load OCR defaults from config or fallback
-    # Load OCR defaults from config or fallback
-    default_dpi = int(_config.get("dpi", 600))
-    default_lang = _config.get("lang", "eng")
-    # Verbose default from config (override with -v flag)
-    default_verbose = bool(_config.get("verbose", False))
+    # Defaults pulled from typed settings
+    default_dpi = settings.dpi
+    default_lang = settings.lang
+    default_verbose = settings.verbose
     parser = argparse.ArgumentParser(
         description="OCR PDF(s) to JSON on stdout",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -87,7 +87,7 @@ def main() -> None:
         # ------------------------------------------------------------------
         # Parallel OCR
         # ------------------------------------------------------------------
-        results = []
+        results: list[OcrResult] = []
         with ThreadPoolExecutor() as executor:
             futures = {
                 executor.submit(ocr_pdf, pdf_path, args.dpi, args.lang): pdf_path
@@ -117,9 +117,7 @@ def main() -> None:
                 results.append(completed[pdf_path])
 
         print(
-            json.dumps(
-                results, ensure_ascii=False, indent=2 if args.verbose else None
-            )
+            json.dumps(results, ensure_ascii=False, indent=2 if args.verbose else None)
         )
 
     except PipelineError as exc:

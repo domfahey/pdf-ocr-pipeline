@@ -10,6 +10,16 @@ import os
 from typing import Dict, Any, List, cast, Optional
 import logging
 
+# internal config/errors must be available before logger use
+try:
+    from .config import _config
+except ImportError:
+    _config = {}
+
+from .errors import PipelineError, LlmError  # noqa: F401 (future use)
+from .settings import settings
+from .types import SegmentationResult
+
 # Import litellm's OpenAI wrapper or fall back to the 'openai' package
 try:
     from litellm import OpenAI
@@ -21,14 +31,6 @@ except ImportError:
 
 # Configure logging
 logger = logging.getLogger(__name__)
-
-# Import configuration defaults & errors
-try:
-    from .config import _config
-except ImportError:
-    _config = {}
-
-from .errors import PipelineError, LlmError
 
 
 def setup_openai_client() -> OpenAI:
@@ -189,14 +191,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Process OCR text with GPT-4o and output results as JSON"
     )
-    # Defaults from config (override with CLI flags)
-    default_verbose = bool(_config.get("verbose", False))
+    # Defaults from settings (override with CLI flags)
+    default_verbose = settings.verbose
     # ------------------------------------------------------------------
     # Default prompt: task‑specific for real‑estate closing packages
     # ------------------------------------------------------------------
-    default_prompt = _config.get(
-        "prompt",
-        (
+    default_prompt = settings.prompt or (
             'Task Name: "Segment and Label Real‑Estate Documents Inside a Single PDF"\n\n'
             "1. Your Role\n"
             "You are a senior real‑estate paralegal and title‑search specialist. You know the structure, phrasing, and recording conventions of:\n"
@@ -245,9 +245,8 @@ def main() -> None:
             "5. Tone & Formatting for the Response\n"
             "Respond only with the JSON object—no narrative, no Markdown.\n\n"
             "That’s it. Go segment the PDF."
-        ),
     )
-    default_pretty = bool(_config.get("pretty", False))
+    default_pretty = bool(getattr(settings, "pretty", False))
 
     parser.add_argument(
         "--prompt",

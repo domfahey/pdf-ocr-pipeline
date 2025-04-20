@@ -4,10 +4,8 @@ Core OCR functionality for PDF OCR Pipeline.
 """
 
 import subprocess
-# NOTE: `sys` is only needed for backward‑compatibility paths that still exit
-# in CLI; library functions will now raise custom exceptions instead.
-import sys
 import logging
+
 # stdlib
 from pathlib import Path
 from typing import List, Any
