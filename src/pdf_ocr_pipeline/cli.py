@@ -35,7 +35,7 @@ def main() -> None:
     # Logging is configured at module load; adjust level based on verbosity
 
     # Load OCR defaults from config or fallback
-    default_dpi = int(_config.get("dpi", 300))
+    default_dpi = int(_config.get("dpi", 600))
     default_lang = _config.get("lang", "eng" )
     parser = argparse.ArgumentParser(
         description="OCR PDF(s) to JSON on stdout",

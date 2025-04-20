@@ -56,7 +56,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual(result[0]["ocr_text"], "OCR text result")
         # Verify OCR called with correct args
         # OCR function should be called with positional args (pdf_path, dpi, lang)
-        self.mock_ocr.assert_called_once_with(Path("file1.pdf"), 300, "eng")
+        self.mock_ocr.assert_called_once_with(Path("file1.pdf"), 600, "eng")
 
     def test_main_multiple_files(self):
         """Test main function with multiple PDF files."""
@@ -75,8 +75,8 @@ class TestCli(unittest.TestCase):
         from unittest.mock import call
 
         expected_calls = [
-            call(Path("file1.pdf"), 300, "eng"),
-            call(Path("file2.pdf"), 300, "eng"),
+            call(Path("file1.pdf"), 600, "eng"),
+            call(Path("file2.pdf"), 600, "eng"),
         ]
         self.assertEqual(self.mock_ocr.call_args_list, expected_calls)
 
