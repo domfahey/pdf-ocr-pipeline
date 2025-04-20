@@ -68,7 +68,8 @@ class TestOcrPdf(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.sample_pdf = Path("test_scanned.pdf")
+        # Path to the sample scanned PDF fixture
+        self.sample_pdf = Path(__file__).parent / "fixtures" / "test_scanned.pdf"
 
         # Set up a mock logger
         self.logger_patcher = patch("pdf_ocr_pipeline.ocr.logger")

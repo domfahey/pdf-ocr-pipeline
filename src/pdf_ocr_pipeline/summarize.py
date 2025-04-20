@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 import os
-from typing import Dict, Any, List
+from typing import Dict, Any, List, cast
 import logging
 
 # Import litellm's OpenAI wrapper or fall back to the 'openai' package
@@ -78,7 +78,8 @@ def process_with_gpt(client: OpenAI, text: str, prompt: str) -> Dict[str, Any]:
         try:
             content = response.choices[0].message.content
             if content:
-                return json.loads(content)
+                # json.loads returns Any, so cast to expected dict
+                return cast(Dict[str, Any], json.loads(content))
             else:
                 return {"error": "Empty response from GPT-4o"}
         except (json.JSONDecodeError, AttributeError) as e:

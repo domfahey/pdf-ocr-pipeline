@@ -11,6 +11,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .ocr import ocr_pdf
+
 try:
     from .config import _config
 except ImportError:
@@ -36,7 +37,7 @@ def main() -> None:
 
     # Load OCR defaults from config or fallback
     default_dpi = int(_config.get("dpi", 600))
-    default_lang = _config.get("lang", "eng" )
+    default_lang = _config.get("lang", "eng")
     parser = argparse.ArgumentParser(
         description="OCR PDF(s) to JSON on stdout",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
@@ -47,8 +48,12 @@ def main() -> None:
         type=Path,
         help="input PDF file(s)",
     )
-    parser.add_argument("--dpi", type=int, default=default_dpi, help="resolution for OCR")
-    parser.add_argument("-l", "--lang", default=default_lang, help="tesseract language code")
+    parser.add_argument(
+        "--dpi", type=int, default=default_dpi, help="resolution for OCR"
+    )
+    parser.add_argument(
+        "-l", "--lang", default=default_lang, help="tesseract language code"
+    )
     parser.add_argument(
         "-v", "--verbose", action="store_true", help="enable verbose output"
     )

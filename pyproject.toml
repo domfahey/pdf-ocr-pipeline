@@ -25,7 +25,7 @@ classifiers = [
   "Topic :: Text Processing :: OCR",
   "Topic :: Utilities",
 ]
-dependencies = ["openai>=1.75.0"]
+dependencies = ["openai>=1.75.0", "pydantic>=2.0"]
   
 [project.scripts]
 pdf-ocr = "pdf_ocr_pipeline.cli:main"
