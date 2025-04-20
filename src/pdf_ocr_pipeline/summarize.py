@@ -10,7 +10,7 @@ import os
 from typing import Dict, Any, List
 import logging
 
-# Attempt to import litellm's OpenAI wrapper first, then fall back to the 'openai' package
+# Import litellm's OpenAI wrapper or fall back to the 'openai' package
 try:
     from litellm import OpenAI
 except ImportError:

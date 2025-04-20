@@ -38,8 +38,11 @@ echo "Using prompt: $PROMPT"
 echo "Output will be saved to: $OUTPUT_FILE"
 
 # Run the pipeline
-python3 "${SCRIPT_DIR}/../bin/ocr_pipe.py" "$PDF_FILE" | \
-python3 "${SCRIPT_DIR}/../bin/summarize_text.py" --prompt "$PROMPT" --pretty > "$OUTPUT_FILE"
+if command -v pdf-ocr &> /dev/null && command -v pdf-ocr-summarize &> /dev/null; then
+    pdf-ocr "$PDF_FILE" | pdf-ocr-summarize --prompt "$PROMPT" --pretty > "$OUTPUT_FILE"
+else
+    python3 -m pdf_ocr_pipeline "$PDF_FILE" | python3 -m pdf_ocr_pipeline.summarize --prompt "$PROMPT" --pretty > "$OUTPUT_FILE"
+fi
 
 # Check if the pipeline succeeded
 if [ $? -eq 0 ]; then

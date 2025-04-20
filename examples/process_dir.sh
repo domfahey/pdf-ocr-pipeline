@@ -37,7 +37,7 @@ find "$DIR" -maxdepth 1 -type f -name "*.pdf" | while read -r pdf_file; do
     if command -v pdf-ocr &> /dev/null; then
         pdf-ocr --dpi "$DPI" -l "$LANG" "$pdf_file" > "$OUTPUT_DIR/${filename%.pdf}.json"
     else
-        python "$(dirname "$0")/../bin/ocr_pipe.py" --dpi "$DPI" -l "$LANG" "$pdf_file" > "$OUTPUT_DIR/${filename%.pdf}.json"
+        python -m pdf_ocr_pipeline --dpi "$DPI" -l "$LANG" "$pdf_file" > "$OUTPUT_DIR/${filename%.pdf}.json"
     fi
     
     if [ $? -eq 0 ]; then

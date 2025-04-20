@@ -9,8 +9,8 @@ import os
 import io
 import json
 from pathlib import Path
-from contextlib import redirect_stdout, redirect_stderr
-from unittest.mock import patch, MagicMock
+from contextlib import redirect_stdout
+from unittest.mock import patch
 
 # Add src to the path so we can import the package
 sys.path.insert(
@@ -73,6 +73,7 @@ class TestCli(unittest.TestCase):
         self.assertEqual(results[1]["ocr_text"], "text2")
         # OCR function should be called for each file with positional args
         from unittest.mock import call
+
         expected_calls = [
             call(Path("file1.pdf"), 300, "eng"),
             call(Path("file2.pdf"), 300, "eng"),
@@ -88,8 +89,8 @@ class TestCli(unittest.TestCase):
             main()
         output = out.getvalue()
         # Pretty JSON starts with '[\n' and contains indented entries
-        self.assertTrue(output.strip().startswith('['))
-        self.assertIn('\n  {', output)
+        self.assertTrue(output.strip().startswith("["))
+        self.assertIn("\n  {", output)
         # Validate parsed content
         results = json.loads(output)
         self.assertEqual(results[0]["file"], "file1.pdf")
