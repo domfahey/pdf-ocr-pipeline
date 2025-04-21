@@ -147,7 +147,7 @@ maintainability.
    • Remove hard‑coded `site_url` from *mkdocs.yml*; add Quickstart page mirroring `process_pdf` usage.
 
 Nice‑to‑haves / future research  
-   • Asyncio‑based OCR pipeline.  
-   • Stream‑friendly PNG + NamedTemporaryFile approach.  
-   • Dataclass/attrs result objects for IDE auto‑completion.
+23. Asyncio‑based OCR pipeline.
+24. Stream‑friendly PNG + NamedTemporaryFile approach.
+25. Dataclass/attrs result objects for IDE auto‑completion.
 
