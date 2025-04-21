@@ -74,3 +74,16 @@ class AppSettings(BaseSettings):
 
 # Singleton instance – import this from other modules
 settings = AppSettings()
+
+# If prompt empty, load bundled template once
+if not settings.prompt:
+    try:
+        import importlib.resources as _resources
+
+        settings.prompt = (  # type: ignore[attr-defined]
+            _resources.files("pdf_ocr_pipeline.templates")
+            .joinpath("segment_prompt.txt")
+            .read_text(encoding="utf-8")
+        )
+    except Exception:  # pragma: no cover – fallback safe: keep prompt empty
+        pass
