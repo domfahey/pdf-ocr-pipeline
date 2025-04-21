@@ -173,14 +173,12 @@ See the `examples/` directory for more in‑depth examples.
 
 ```python
 from pathlib import Path
-from ocr_pipe import ocr_pdf
+from pdf_ocr_pipeline import process_pdf
 
-# Process a PDF file
+# Pure OCR
 pdf_path = Path('document.pdf')
-text = ocr_pdf(pdf_path, dpi=300, lang='eng')
-
-# Do something with the extracted text
-print(text)
+ocr_result = process_pdf(pdf_path, dpi=300, lang='eng')
+print(ocr_result)
 ```
 
 ### Example Scripts
@@ -202,15 +200,20 @@ The repository includes example scripts to demonstrate common workflows:
 3. **Programmatic Integration**
    ```python
    # From examples/programmatic_usage.py
-   from pdf_ocr_pipeline import ocr_pdf, process_with_gpt
-   
-   # Extract text from PDF
-   text = ocr_pdf(pdf_path)
-   
-   # Analyze with AI
-   analysis = process_with_gpt(client, text, prompt)
+   from pathlib import Path
+   from pdf_ocr_pipeline import process_pdf
+
+   pdf_path = Path('document.pdf')
+
+   # Pure OCR
+   ocr_result = process_pdf(pdf_path)
+   print(ocr_result)
+
+   # OCR + segmentation via GPT
+   segmentation_result = process_pdf(pdf_path, analyze=True)
+   print(segmentation_result)
    ```
-   Demonstrates how to integrate the PDF OCR Pipeline into your own Python applications, combining OCR and AI analysis for custom document processing solutions.
+   Demonstrates how to integrate the PDF OCR Pipeline into your own Python applications, using the high-level `process_pdf` function for both OCR and optional AI analysis.
 
 ## Output Format
 

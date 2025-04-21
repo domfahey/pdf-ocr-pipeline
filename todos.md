@@ -93,7 +93,7 @@ check:   lint test
  • jobs: lint (ruff), type‑check (mypy), tests, optional end‑to‑end (needs secret).  
 12.2 Add pre‑commit.ci for automatic PR linting.
 
-- [ ] **13. Higher‑level API**  
+- [x] **13. Higher‑level API**  
 13.1 Implement `process_pdf(path, *, analyze=False, **settings) -> SegmentationResult | OcrResult`.  
 13.2 Expose from package `__init__.py`; update README example code.
 
