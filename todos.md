@@ -47,16 +47,16 @@ class AppSettings(BaseSettings):
 4.2 Load it with `importlib.resources.files("pdf_ocr_pipeline.templates").joinpath(...).read_text()` in `settings.py`.  
 4.3 Remove long string from code → readability gain.
 
-- [ ] **5. Logging overhaul**  
+- [x] **5. Logging overhaul**  
 5.1 Add helper `get_logger(name: str) -> logging.Logger` that sets formatter once and returns child loggers.  
 5.2 Replace direct `logging.basicConfig` calls with this helper.  
 5.3 Add `--quiet` / `--verbose` CLI flags that adjust root level only.
 
-- [ ] **6. Poppler behaviour detection**  
+- [x] **6. Poppler behaviour detection**  
 6.1 On first `ocr_pdf` call: run `pdftoppm -stdout-for-testing` tiny probe; cache result in module variable.  
 6.2 Choose streaming or temp‑file path accordingly—no try/except every time.
 
-- [ ] **7. Cleaner subprocess helper**  
+- [x] **7. Cleaner subprocess helper**  
 7.1 Enhance `run_cmd()` to accept `ok_exit_codes=(0,)`, capture stderr by default, raise `CalledProcessError` with decoded message.  
 7.2 Centralise `shutil.which()` check at import time; raise MissingBinaryError early.
 

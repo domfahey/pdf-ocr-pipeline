@@ -61,11 +61,13 @@ This project and everyone participating in it are governed by our Code of Conduc
 
 2. Make your changes.
 
-3. Run the linting tools:
+3. Run quality checks (formatting, lint, tests):
    ```bash
-   black src tests examples
-   flake8 src tests examples
-   mypy src
+   # Auto‑format & fix straightforward issues
+   make format
+
+   # Static analysis and full test‑suite
+   make check
    ```
 
 4. Run the tests:
@@ -91,8 +93,8 @@ This project and everyone participating in it are governed by our Code of Conduc
 
 This project follows these coding standards:
 
-- **Formatting**: We use Black with a line length of 88 characters
-- **Style**: PEP 8 guidelines with some exceptions defined in setup.cfg
+- **Formatting**: `ruff format` followed by Black (line‑length 88) for edge cases.
+- **Style / Lint**: Ruff (`make lint`) replaces the previous Flake8 setup.
 - **Type Annotations**: All functions should have proper type annotations
 - **Docstrings**: Google-style docstrings for all modules, classes, and functions
 - **Imports**: Standard library first, then third-party packages, grouped and alphabetized
@@ -108,14 +110,11 @@ This project follows these coding standards:
 ### Running Tests
 
 ```bash
-# Run all tests
-python -m unittest discover tests
+# Quick test run
+make test
 
-# Run specific test modules
-python -m unittest tests/test_summarize.py tests/test_pipeline.py
-
-# Run with coverage
-python -m pytest --cov=pdf_ocr_pipeline tests/
+# With coverage report
+pytest --cov=pdf_ocr_pipeline tests/
 ```
 
 ## Documentation Guidelines

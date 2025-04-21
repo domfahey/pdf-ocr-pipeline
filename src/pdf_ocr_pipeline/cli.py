@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+# Local imports
+from .logging_utils import get_logger
 from .ocr import ocr_pdf
 from .errors import PipelineError
 from .types import OcrResult
@@ -23,7 +25,7 @@ except ImportError:
 """
 Logging is configured at runtime to default to DEBUG level with detailed formatting.
 """
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 """
@@ -37,14 +39,9 @@ def main() -> None:
     Parse arguments and perform OCR on one or more PDF files.
     Outputs a JSON array of {file, ocr_text} objects to stdout.
     """
-    # Logging is configured at module load; adjust level based on verbosity
-
-    # Configure detailed logging (default DEBUG)
-    logging.basicConfig(
-        format="%(asctime)s %(name)s %(levelname)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        level=logging.DEBUG,
-    )
+    # ------------------------------------------------------------------
+    # CLI argument parsing
+    # ------------------------------------------------------------------
     # Defaults pulled from typed settings
     default_dpi = settings.dpi
     default_lang = settings.lang
@@ -72,11 +69,28 @@ def main() -> None:
         default=default_verbose,
         help="enable verbose output",
     )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        default=False,
+        help="suppress informational output; only warnings and errors are shown",
+    )
+    # ------------------------------------------------------------------
+    # Apply logging level according to CLI flags
+    # ------------------------------------------------------------------
     args = parser.parse_args()
 
-    # Verbose flag is retained but default logging is already DEBUG
-    if args.verbose:
-        logger.debug("Verbose flag enabled (logging already at DEBUG level)")
+    root_logger = logging.getLogger()
+
+    if args.verbose and getattr(args, "quiet", False):
+        parser.error("--verbose and --quiet are mutually exclusive")
+
+    if getattr(args, "quiet", False):
+        root_logger.setLevel(logging.WARNING)
+    elif args.verbose:
+        root_logger.setLevel(logging.DEBUG)
+        logger.debug("Verbose flag enabled – root log‑level set to DEBUG")
 
     try:
         # Check for file existence

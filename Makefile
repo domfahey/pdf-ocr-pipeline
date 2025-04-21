@@ -1,49 +1,23 @@
-.PHONY: clean lint test type coverage install dev dist publish
+# Developer shortcuts -------------------------------------------------
 
-# Variables
-PYTHON = python3
-PIP = $(PYTHON) -m pip
-PYTEST = pytest
-BLACK = black
-FLAKE8 = flake8
-MYPY = mypy
+.PHONY: format lint test check
 
-clean:
-	rm -rf build/
-	rm -rf dist/
-	rm -rf *.egg-info
-	rm -rf .pytest_cache
-	rm -rf .coverage
-	rm -rf htmlcov/
-	find . -type d -name __pycache__ -exec rm -rf {} +
-	find . -type f -name "*.pyc" -delete
+# Use the same Python that is running this script (assumes virtualenv/uv)
+PY := python3
+
+format:
+	@echo "Running ruff format and black …"
+	@$(PY) -m ruff format .
+	@$(PY) -m black .
 
 lint:
-	$(BLACK) src tests examples
-	$(FLAKE8) src tests examples
+	@echo "Running ruff check and black --check …"
+	@$(PY) -m ruff check .
+	@$(PY) -m black --check .
 
 test:
-	$(PYTEST) tests/
+	@echo "Running pytest …"
+	@$(PY) -m pytest -q
 
-type:
-	$(MYPY) src
-
-coverage:
-	$(PYTEST) --cov=pdf_ocr_pipeline --cov-report=html tests/
-	@echo "HTML coverage report generated in htmlcov/"
-
-install:
-	# Sync the project environment and install dependencies with uv
-	uv sync
-
-dev:
-	# Sync the project environment including development dependencies
-	uv sync --all-extras
-
-dist:
-	# Build source distributions and wheels with uv
-	uv build
-
-publish:
-   # Publish distributions via uv (uses Twine under the hood)
-   uv publish
+check: lint test
+	@echo "All checks passed ✔"

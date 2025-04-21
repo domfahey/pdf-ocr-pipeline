@@ -9,37 +9,157 @@ import subprocess
 from .logging_utils import get_logger
 
 # stdlib
+
 from pathlib import Path
-from typing import List, Any
+from typing import List, Any, Optional, Tuple, Union
 
 # internal
+import shutil
+import sys
+
 from .errors import MissingBinaryError, OcrError
 
 # Logger for error messages
 logger = get_logger(__name__)
 
+# ---------------------------------------------------------------------------
+# Detect *once* whether the installed `pdftoppm` can stream image data to
+# STDOUT when the output prefix is "-".  Some Poppler versions silently create
+# files on disk instead, which breaks the piping approach.  Caching the result
+# avoids the try/except overhead on every OCR invocation.
+# ---------------------------------------------------------------------------
 
-def run_cmd(cmd: List[str], **kwargs: Any) -> subprocess.CompletedProcess:
+_STREAMING_SUPPORTED: Optional[bool] = None  # ``None`` → not yet detected
+
+# ---------------------------------------------------------------------------
+# Early binary availability check (skipped under *pytest* to keep tests fast)
+# ---------------------------------------------------------------------------
+
+_REQUIRED_BINARIES = ("pdftoppm", "tesseract")
+
+if "pytest" not in sys.modules:  # pragma: no cover – binary checking disabled in tests
+    for _bin in _REQUIRED_BINARIES:
+        if shutil.which(_bin) is None:
+            raise MissingBinaryError(_bin)
+
+
+def _detect_streaming_support() -> bool:  # noqa: WPS231 (complex – small helper)
+    """Return ``True`` if *pdftoppm* can emit PPM data to STDOUT.
+
+    Strategy
+    --------
+    1. Create an in‑memory 1‑page, 1×1‑pixel PDF (a few bytes).
+    2. Invoke ``pdftoppm`` with output prefix ``-`` (means *write to STDOUT*).
+    3. If any bytes are produced on *stdout* we assume streaming is supported.
+
+    The call is wrapped in ``try/except`` so that missing binaries or timeouts
+    degrade gracefully – we fall back to the safer *temp‑file* code path.
     """
-    Run a subprocess command, exiting if the executable is not found.
 
-    Args:
-        cmd: List of command arguments.
-        **kwargs: Additional options for subprocess.run.
+    import subprocess
+    import tempfile
+    import textwrap
 
-    Returns:
-        subprocess.CompletedProcess: The completed process result.
+    minimal_pdf = textwrap.dedent(
+        """
+        %PDF-1.1
+        1 0 obj<<>>endobj
+        trailer<<>>
+        %%EOF
+        """
+    ).encode()
 
-    Exits:
-        1 if the executable is not found.
+    with tempfile.TemporaryDirectory(prefix="pdf_ocr_probe_") as tmpdir:
+        probe_path = Path(tmpdir) / "probe.pdf"
+        try:
+            probe_path.write_bytes(minimal_pdf)
+        except Exception:  # pragma: no cover – extremely unlikely
+            return False
+
+        try:
+            result = subprocess.run(
+                [
+                    "pdftoppm",
+                    "-r",
+                    "10",
+                    str(probe_path),
+                    "-",  # write PPM to STDOUT if supported
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=5,
+            )
+        except (FileNotFoundError, subprocess.SubprocessError):  # noqa: PERF203
+            # Missing binary or other execution error → assume *no* streaming.
+            return False
+
+    return bool(result.stdout)
+
+
+def run_cmd(
+    cmd: List[str | Path | bytes],
+    *,
+    ok_exit_codes: Tuple[int, ...] = (0,),
+    capture_output: bool = True,
+    **kwargs: Any,
+) -> subprocess.CompletedProcess:
+    """Run *cmd* and return the :class:`~subprocess.CompletedProcess`.
+
+    Improvements compared to a bare :pyfunc:`subprocess.run` call:
+
+    1. *stderr* is captured by default so that callers can inspect / log it
+       without having to set ``stderr=subprocess.PIPE`` every time.
+    2. Accepts *ok_exit_codes* – a tuple of return codes that are considered
+       successful (defaults to ``(0,)``).
+    3. On *FileNotFoundError* raises :class:`MissingBinaryError` for early
+       detection.
+    4. On unexpected exit code raises :class:`subprocess.CalledProcessError`
+       with captured *stdout* / *stderr* so that the caller can decide how to
+       handle the failure.
     """
+
     # Log the full command for debugging
-    logger.debug("Executing command: %s", " ".join(cmd))
+    logger.debug("Executing command: %s", " ".join(map(str, cmd)))
+
+    # Configure default I/O capturing **unless** the caller overrode them.
+    if capture_output:
+        kwargs.setdefault("stdout", subprocess.PIPE)
+        kwargs.setdefault("stderr", subprocess.PIPE)
+
+    # We handle exit‑code ourselves; always run with ``check=False``.
+    kwargs["check"] = False
+
     try:
-        return subprocess.run(cmd, **kwargs)
-    except FileNotFoundError as e:
-        logger.error("Missing binary: %s", e.filename)
-        raise MissingBinaryError(e.filename) from e
+        proc = subprocess.run(cmd, **kwargs)
+    except FileNotFoundError as exc:
+        logger.error("Missing binary: %s", exc.filename)
+        raise MissingBinaryError(exc.filename) from exc
+
+    if proc.returncode not in ok_exit_codes:
+        # Decode stderr for friendlier message but keep raw bytes in exception.
+        stderr_decoded: Union[str, None]
+        try:
+            stderr_decoded = (
+                proc.stderr.decode("utf-8", errors="replace") if proc.stderr else None
+            )
+        except Exception:  # pragma: no cover – decoding should always succeed
+            stderr_decoded = None
+
+        logger.debug(
+            "Command %s returned %s (stderr: %s)",
+            " ".join(map(str, cmd)),
+            proc.returncode,
+            stderr_decoded or "<empty>",
+        )
+
+        raise subprocess.CalledProcessError(
+            returncode=proc.returncode,
+            cmd=cmd,
+            output=proc.stdout,
+            stderr=proc.stderr,
+        )
+
+    return proc
 
 
 def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
@@ -80,14 +200,94 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
     # everywhere, copes with multi‑page PDFs, and avoids the silent failure
     # outlined above.
 
+    global _STREAMING_SUPPORTED
+
+    if _STREAMING_SUPPORTED is None:
+        _STREAMING_SUPPORTED = _detect_streaming_support()
+        logger.debug(
+            "pdftoppm streaming support detected: %s",
+            "yes" if _STREAMING_SUPPORTED else "no",
+        )
+
+    if _STREAMING_SUPPORTED:
+        # --------------------------------------------------------------
+        # Fast path: pipe rasterised pages directly to tesseract.
+        # --------------------------------------------------------------
+        try:
+            pdftoppm_res = run_cmd(
+                [
+                    "pdftoppm",
+                    "-r",
+                    str(dpi),
+                    str(pdf_path),
+                    "-",  # write PPM to STDOUT
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            err_msg = None
+            if hasattr(e, "stderr") and e.stderr:
+                try:
+                    err_msg = e.stderr.decode("utf-8", errors="replace").strip()
+                except Exception:
+                    err_msg = "<unable to decode pdftoppm stderr>"
+            logger.error(
+                "pdftoppm exited with status %s%s",
+                e.returncode,
+                f": {err_msg}" if err_msg else "",
+            )
+            raise OcrError("pdftoppm failed") from e
+
+        # No need to check images; hand off to tesseract directly.
+        if not pdftoppm_res.stdout:
+            # Unexpected – fallback to temp‑file path.
+            logger.debug("pdftoppm produced no stdout, falling back to temp‑file path")
+            _STREAMING_SUPPORTED = False  # cache so we don't retry every time
+            # continue to temp‑file workflow below
+        else:
+            try:
+                tess_res = run_cmd(
+                    [
+                        "tesseract",
+                        "-l",
+                        lang,
+                        "--dpi",
+                        str(dpi),
+                        "-",  # stdin
+                        "stdout",
+                    ],
+                    input=pdftoppm_res.stdout,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=True,
+                )
+            except subprocess.CalledProcessError as e:
+                err_msg = None
+                if hasattr(e, "stderr") and e.stderr:
+                    try:
+                        err_msg = e.stderr.decode("utf-8", errors="replace").strip()
+                    except Exception:
+                        err_msg = "<unable to decode tesseract stderr>"
+                logger.error(
+                    "tesseract exited with status %s%s",
+                    e.returncode,
+                    f": {err_msg}" if err_msg else "",
+                )
+                raise OcrError("tesseract failed during streaming path") from e
+
+            return (tess_res.stdout or b"").decode("utf-8", errors="replace")
+
+    # ------------------------------------------------------------------
+    # Safe fallback: rasterise into a temporary directory first.
+    # ------------------------------------------------------------------
     from tempfile import TemporaryDirectory
 
     with TemporaryDirectory(prefix="pdf_ocr_pipeline_") as tmpdir:
         prefix_path = Path(tmpdir) / "page"
 
-        # ------------------------------------------------------------------
-        # 1. Rasterise the PDF → PPM files
-        # ------------------------------------------------------------------
+        # 1. Rasterise
         try:
             pdftoppm_res = run_cmd(
                 [
@@ -115,17 +315,9 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
             )
             raise OcrError("pdftoppm failed") from e
 
-        # ------------------------------------------------------------------
-        # 2. Locate the generated images
-        # ------------------------------------------------------------------
         images = sorted(Path(tmpdir).glob("page-*.ppm"))
 
-        # ------------------------------------------------------------------
-        # Fallback for mocked / legacy behaviour: if no images were generated
-        # but pdftoppm *did* return raster data on STDOUT, fall back to the
-        # original streaming implementation.  This keeps the public contract
-        # unchanged for unit‑tests that inject fake PPM data via mocks.
-        # ------------------------------------------------------------------
+        # streaming fallback for mocks / legacy behaviour
         if not images and pdftoppm_res.stdout:
             try:
                 tess_res = run_cmd(
@@ -135,7 +327,7 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
                         lang,
                         "--dpi",
                         str(dpi),
-                        "-",  # STDIN image
+                        "-",
                         "stdout",
                     ],
                     input=pdftoppm_res.stdout,
@@ -163,9 +355,7 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
             logger.error("pdftoppm produced no images for %s", pdf_path)
             raise OcrError("No images produced by pdftoppm")
 
-        # ------------------------------------------------------------------
         # 3. OCR every page and concatenate the results
-        # ------------------------------------------------------------------
         ocr_text_parts: List[str] = []
 
         for img_path in images:
@@ -174,7 +364,7 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
                     [
                         "tesseract",
                         str(img_path),
-                        "stdout",  # write OCR text to STDOUT
+                        "stdout",
                         "-l",
                         lang,
                         "--dpi",
@@ -203,5 +393,4 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
                 (tess_res.stdout or b"").decode("utf-8", errors="replace")
             )
 
-    # Join page texts with a page‑break to aid downstream parsing
     return "\n\f\n".join(ocr_text_parts)

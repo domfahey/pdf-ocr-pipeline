@@ -7,8 +7,11 @@ import unittest
 import sys
 import os
 import subprocess
+
+# Built‑ins
 from pathlib import Path
 from unittest.mock import patch, MagicMock
+
 
 # Add src to the path so we can import the package
 sys.path.insert(
@@ -70,7 +73,8 @@ class TestOcrPdf(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures."""
         # Path to the sample scanned PDF fixture
-        self.sample_pdf = Path(__file__).parent / "fixtures" / "test_scanned.pdf"
+        self.scanned_pdf = Path(__file__).parent / "fixtures" / "test_scanned.pdf"
+        self.digital_pdf = Path(__file__).parent / "fixtures" / "test_digital.pdf"
 
         # Set up a mock logger
         self.logger_patcher = patch("pdf_ocr_pipeline.ocr.logger")
@@ -80,7 +84,7 @@ class TestOcrPdf(unittest.TestCase):
         """Tear down test fixtures."""
         self.logger_patcher.stop()
 
-    def test_ocr_pdf_success(self, mock_run_cmd):
+    def test_ocr_pdf_success_scanned(self, mock_run_cmd):
         """Test ocr_pdf function with successful execution."""
         # Import here to apply patches properly
         from pdf_ocr_pipeline.ocr import ocr_pdf
@@ -97,14 +101,36 @@ class TestOcrPdf(unittest.TestCase):
         # Set up side effect sequence
         mock_run_cmd.side_effect = [ppm_result, tess_result]
 
-        # Call the function
-        result = ocr_pdf(self.sample_pdf)
+        # Select pdf path
+        result = ocr_pdf(self.scanned_pdf)
 
         # Assertions
         self.assertEqual(result, "Sample OCR text")
         self.assertEqual(mock_run_cmd.call_count, 2)
 
-    def test_ocr_pdf_pdftoppm_error(self, mock_run_cmd):
+    def test_ocr_pdf_success_digital(self, mock_run_cmd):
+        """Same as above but for digital PDF."""
+
+        # Mock successful pdftoppm and tesseract runs
+        ppm_result = MagicMock(spec=subprocess.CompletedProcess)
+        ppm_result.stdout = b"ppm_image_data"
+        ppm_result.returncode = 0
+
+        tess_result = MagicMock(spec=subprocess.CompletedProcess)
+        tess_result.stdout = b"Sample OCR text"
+        tess_result.returncode = 0
+
+        mock_run_cmd.side_effect = [ppm_result, tess_result]
+
+        from pdf_ocr_pipeline.ocr import ocr_pdf
+
+        result = ocr_pdf(self.digital_pdf)
+
+        # Assertions
+        self.assertEqual(result, "Sample OCR text")
+        self.assertEqual(mock_run_cmd.call_count, 2)
+
+    def test_ocr_pdf_pdftoppm_error_scanned(self, mock_run_cmd):
         """Test ocr_pdf function when pdftoppm fails."""
         # Import here to apply patches properly
         from pdf_ocr_pipeline.ocr import ocr_pdf
@@ -116,10 +142,23 @@ class TestOcrPdf(unittest.TestCase):
         from pdf_ocr_pipeline.errors import OcrError
 
         with self.assertRaises(OcrError):
-            ocr_pdf(self.sample_pdf)
+            ocr_pdf(self.scanned_pdf)
+
+    def test_ocr_pdf_pdftoppm_error_digital(self, mock_run_cmd):
+        """Digital version."""
+
+        from pdf_ocr_pipeline.ocr import ocr_pdf
+
+        pdftoppm_error = subprocess.CalledProcessError(returncode=1, cmd=["pdftoppm"])
+        mock_run_cmd.side_effect = pdftoppm_error
+
+        from pdf_ocr_pipeline.errors import OcrError
+
+        with self.assertRaises(OcrError):
+            ocr_pdf(self.digital_pdf)
         self.mock_logger.error.assert_called_once()
 
-    def test_ocr_pdf_tesseract_error(self, mock_run_cmd):
+    def test_ocr_pdf_tesseract_error_scanned(self, mock_run_cmd):
         """Test ocr_pdf function when tesseract fails."""
         # Import here to apply patches properly
         from pdf_ocr_pipeline.ocr import ocr_pdf
@@ -138,10 +177,26 @@ class TestOcrPdf(unittest.TestCase):
         from pdf_ocr_pipeline.errors import OcrError
 
         with self.assertRaises(OcrError):
-            ocr_pdf(self.sample_pdf)
+            ocr_pdf(self.scanned_pdf)
+
+    def test_ocr_pdf_tesseract_error_digital(self, mock_run_cmd):
+        from pdf_ocr_pipeline.ocr import ocr_pdf
+
+        ppm_result = MagicMock(spec=subprocess.CompletedProcess)
+        ppm_result.stdout = b"ppm_image_data"
+        ppm_result.returncode = 0
+
+        tesseract_error = subprocess.CalledProcessError(returncode=2, cmd=["tesseract"])
+
+        mock_run_cmd.side_effect = [ppm_result, tesseract_error]
+
+        from pdf_ocr_pipeline.errors import OcrError
+
+        with self.assertRaises(OcrError):
+            ocr_pdf(self.digital_pdf)
         self.mock_logger.error.assert_called_once()
 
-    def test_ocr_pdf_no_stdout(self, mock_run_cmd):
+    def test_ocr_pdf_no_stdout_scanned(self, mock_run_cmd):
         """Test ocr_pdf function when pdftoppm stdout is None."""
         # Import here to apply patches properly
         from pdf_ocr_pipeline.ocr import ocr_pdf
@@ -156,7 +211,21 @@ class TestOcrPdf(unittest.TestCase):
         from pdf_ocr_pipeline.errors import OcrError
 
         with self.assertRaises(OcrError):
-            ocr_pdf(self.sample_pdf)
+            ocr_pdf(self.scanned_pdf)
+
+    def test_ocr_pdf_no_stdout_digital(self, mock_run_cmd):
+        from pdf_ocr_pipeline.ocr import ocr_pdf
+
+        ppm_result = MagicMock(spec=subprocess.CompletedProcess)
+        ppm_result.stdout = None
+        ppm_result.returncode = 0
+
+        mock_run_cmd.return_value = ppm_result
+
+        from pdf_ocr_pipeline.errors import OcrError
+
+        with self.assertRaises(OcrError):
+            ocr_pdf(self.digital_pdf)
         self.mock_logger.error.assert_called_once()
 
 

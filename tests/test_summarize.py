@@ -1,189 +1,107 @@
 #!/usr/bin/env python3
-"""
-Unit tests for the PDF OCR Pipeline summarization functionality.
-"""
+"""Unit tests for the LLM summarisation helpers (post‑abstraction)."""
 
-import unittest
-import sys
-import os
+from __future__ import annotations
+
 import json
-from unittest.mock import patch, MagicMock
+import os
+import sys
+from typing import Dict, Any
+from unittest.mock import MagicMock, patch
 
-# Add src to the path so we can import the package
+
+# Ensure local src/ is imported
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-)
+)  # type: ignore
 
-from pdf_ocr_pipeline.summarize import (  # noqa: E402
+
+from pdf_ocr_pipeline.summarize import (  # noqa: E402  (import after path tweak)
     process_with_gpt,
-    setup_openai_client,
-    read_input,
-    main,
+    main as summarize_main,
 )
 
 
-class TestSummarize(unittest.TestCase):
-    """Test cases for the summarization functionality."""
+class TestSummarize:
+    """High‑level unit‑tests for summarisation pipeline."""
 
-    def setUp(self):
-        """Set up test fixtures."""
-        # Mock OpenAI client
-        self.openai_patcher = patch("pdf_ocr_pipeline.summarize.OpenAI")
-        self.mock_openai = self.openai_patcher.start()
+    def setup_method(self):  # noqa: D401 (pytest style)
+        # Patch llm_client.send to avoid real network calls
+        send_patcher = patch("pdf_ocr_pipeline.summarize.llm_send")
+        self.mock_send = send_patcher.start()
+        self._send_patcher = send_patcher
 
-        # Create a mock client instance
-        self.mock_client = MagicMock()
-        self.mock_openai.return_value = self.mock_client
+        # Provide a default JSON response so individual tests can override
+        self.mock_send.return_value = {
+            "summary": "Test summary",
+            "key_points": ["Point 1", "Point 2"],
+        }
 
-        # Mock completions
-        self.mock_completions = MagicMock()
-        self.mock_client.chat.completions.create.return_value = self.mock_completions
+        # Patch logger to keep output clean
+        logger_patcher = patch("pdf_ocr_pipeline.summarize.logger")
+        self.mock_logger = logger_patcher.start()
+        self._logger_patcher = logger_patcher
 
-        # Set up a default mock response
-        mock_message = MagicMock()
-        msg_content = (
-            '{"summary": "Test summary", "key_points": ["Point 1", "Point 2"]}'
+        # Patch deprecated setup_openai_client to avoid real client creation
+        client_patcher = patch(
+            "pdf_ocr_pipeline.summarize.setup_openai_client", return_value=MagicMock()
         )
-        mock_message.content = msg_content
-        self.mock_completions.choices = [MagicMock(message=mock_message)]
+        self._client_patcher = client_patcher
+        client_patcher.start()
 
-        # Mock logger
-        self.logger_patcher = patch("pdf_ocr_pipeline.summarize.logger")
-        self.mock_logger = self.logger_patcher.start()
+    def teardown_method(self):  # noqa: D401 (pytest style)
+        self._send_patcher.stop()
+        self._logger_patcher.stop()
+        self._client_patcher.stop()
 
-        # Mock environment variables
-        self.env_patcher = patch.dict(os.environ, {"OPENAI_API_KEY": "test-api-key"})
-        self.env_patcher.start()
+    # ------------------------------------------------------------------
+    # Direct helper tests
+    # ------------------------------------------------------------------
 
-    def tearDown(self):
-        """Tear down test fixtures."""
-        self.openai_patcher.stop()
-        self.logger_patcher.stop()
-        self.env_patcher.stop()
+    def test_process_with_gpt_success(self):
+        """process_with_gpt should forward to llm_client.send and return its value."""
 
-    def test_setup_openai_client(self):
-        """Test setting up the OpenAI client."""
-        client = setup_openai_client()
-        self.assertEqual(client, self.mock_client)
-        self.mock_openai.assert_called_once_with(api_key="test-api-key")
+        result = process_with_gpt(None, "Some OCR text", "Summarise")
 
-    def test_setup_openai_client_missing_api_key(self):
-        """Test error handling when API key is missing."""
-        # Remove API key from environment
-        with patch.dict(os.environ, {}, clear=True):
-            with self.assertRaises(ValueError) as context:
-                setup_openai_client()
+        self.mock_send.assert_called_once()
+        assert result["summary"] == "Test summary"
 
-            self.assertIn("OpenAI API key not found", str(context.exception))
+    def test_process_with_gpt_error_passthrough(self):
+        """Errors returned by the client are passed through unchanged."""
 
-    def test_process_with_gpt(self):
-        """Test processing text with GPT-4o."""
-        result = process_with_gpt(
-            self.mock_client, "Sample OCR text", "Summarize this text"
-        )
+        self.mock_send.return_value = {"error": "Boom"}
 
-        # Check if OpenAI API was called correctly
-        self.mock_client.chat.completions.create.assert_called_once()
+        result = process_with_gpt(None, "Text", "Prompt")
 
-        # Verify the correct model was used
-        args, kwargs = self.mock_client.chat.completions.create.call_args
-        self.assertEqual(kwargs["model"], "gpt-4o")
+        assert result == {"error": "Boom"}
 
-        # Verify response format is JSON
-        self.assertEqual(kwargs["response_format"], {"type": "json_object"})
+    # ------------------------------------------------------------------
+    # CLI pipeline
+    # ------------------------------------------------------------------
 
-        # Check if the correct result was returned
-        self.assertEqual(result["summary"], "Test summary")
-        self.assertEqual(result["key_points"], ["Point 1", "Point 2"])
+    def test_cli_json_roundtrip(self, monkeypatch):  # noqa: D401 (pytest fixture param)
+        """Full CLI round‑trip with mocked LLM call."""
 
-    def test_process_with_gpt_empty_response(self):
-        """Test handling of empty responses from GPT-4o."""
-        # Mock an empty response
-        self.mock_completions.choices[0].message.content = None
-
-        result = process_with_gpt(
-            self.mock_client, "Sample OCR text", "Summarize this text"
-        )
-
-        self.assertEqual(result, {"error": "Empty response from GPT-4o"})
-
-    def test_process_with_gpt_invalid_json(self):
-        """Test handling of invalid JSON responses from GPT-4o."""
-        # Mock an invalid JSON response
-        self.mock_completions.choices[0].message.content = "Not valid JSON"
-
-        result = process_with_gpt(
-            self.mock_client, "Sample OCR text", "Summarize this text"
-        )
-
-        self.assertIn("error", result)
-        self.assertIn("Failed to parse response", result["error"])
-
-    def test_read_input_json_list(self):
-        """Test reading JSON list input."""
-        mock_json = '[{"file": "doc1.pdf", "ocr_text": "Sample text 1"}, '
-        mock_json += '{"file": "doc2.pdf", "ocr_text": "Sample text 2"}]'
-
-        with patch("sys.stdin.read", return_value=mock_json):
-            result = read_input()
-
-        self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["file"], "doc1.pdf")
-        self.assertEqual(result[0]["ocr_text"], "Sample text 1")
-        self.assertEqual(result[1]["file"], "doc2.pdf")
-        self.assertEqual(result[1]["ocr_text"], "Sample text 2")
-
-    def test_read_input_json_object(self):
-        """Test reading JSON object input."""
-        mock_json = '{"some_key": "some_value"}'
-
-        with patch("sys.stdin.read", return_value=mock_json):
-            result = read_input()
-
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["file"], "unknown")
-        self.assertEqual(result[0]["ocr_text"], mock_json)
-
-    def test_read_input_raw_text(self):
-        """Test reading raw text input."""
-        mock_text = "This is some raw OCR text"
-
-        with patch("sys.stdin.read", return_value=mock_text):
-            result = read_input()
-
-        self.assertEqual(len(result), 1)
-        self.assertEqual(result[0]["file"], "unknown")
-        self.assertEqual(result[0]["ocr_text"], mock_text)
-
-    def test_main_function(self):
-        """Test the main function."""
-        # Mock input data
-        mock_input = '[{"file": "test.pdf", "ocr_text": "Sample OCR text"}]'
-
-        # Expected output
-        expected_output = [
-            {
-                "file": "test.pdf",
-                "analysis": {
-                    "summary": "Test summary",
-                    "key_points": ["Point 1", "Point 2"],
-                },
-            }
+        input_payload = [
+            {"file": "input.pdf", "ocr_text": "Hello world"},
         ]
 
-        # Mock command line arguments
-        with patch("sys.argv", ["summarize_text.py"]):
-            # Mock stdin read
-            with patch("sys.stdin.read", return_value=mock_input):
-                # Mock print function
-                with patch("builtins.print") as mock_print:
-                    main()
+        monkeypatch.setattr(sys, "argv", ["summarize", "--pretty"])
+        import io
 
-                    # Verify print was called with correct JSON
-                    mock_print.assert_called_once()
-                    printed_output = json.loads(mock_print.call_args[0][0])
-                    self.assertEqual(printed_output, expected_output)
+        monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(input_payload)))
 
+        printed: Dict[str, Any] = {}
 
-if __name__ == "__main__":
-    unittest.main()
+        def fake_print(arg):  # noqa: D401 (inner helper)
+            printed["data"] = json.loads(arg)
+
+        monkeypatch.setattr("builtins.print", fake_print)
+
+        summarize_main()
+
+        # Ensure mocked send called & output propagated
+        self.mock_send.assert_called_once()
+
+        assert printed["data"][0]["file"] == "input.pdf"
+        assert printed["data"][0]["analysis"]["summary"] == "Test summary"

@@ -6,14 +6,14 @@ Module for summarizing OCR text using OpenAI's GPT-4o model.
 import argparse
 import json
 import sys
-import os
 
 # builtin
 from typing import Dict, Any, List, cast, Optional
 import logging
 
-# project
+# project imports
 from .logging_utils import get_logger
+from .llm_client import send as llm_send, _get_client  # noqa: WPS437 (internal use)
 
 # internal config/errors must be available before logger use
 try:
@@ -37,95 +37,45 @@ except ImportError:
 logger = get_logger(__name__)
 
 
-def setup_openai_client() -> OpenAI:
+def setup_openai_client():  # noqa: D401 – kept for backward‑compatibility
+    """Deprecated: use :pymod:`pdf_ocr_pipeline.llm_client` instead.
+
+    The original public helper remains to avoid breaking external code and the
+    *end‑to‑end* integration test.  Internally it simply delegates to the new
+    LLM abstraction.
     """
-    Set up the OpenAI client with API key from environment variables.
 
-    Returns:
-        OpenAI client instance
-
-    Raises:
-        ValueError: If the OpenAI API key is not set
-    """
-    api_key = os.environ.get("OPENAI_API_KEY")
-    # ------------------------------------------------------------------
-    # Validate API key
-    # ------------------------------------------------------------------
-    if not api_key or api_key.strip() == "":
-        raise ValueError(
-            "OpenAI API key not found. "
-            "Please set the OPENAI_API_KEY environment variable."
-        )
-
-    # Guard against the common mistake of leaving a placeholder string in
-    # the environment (e.g. "your_api_key" or "YOUR_API_KEY") which will
-    # otherwise cause a confusing 401 error downstream.
-    placeholder_values = {"your_api_key", "YOUR_API_KEY", "<your_api_key>"}
-    if api_key in placeholder_values:
-        raise ValueError(
-            "The OPENAI_API_KEY environment variable contains a placeholder "
-            "value (e.g. 'your_api_key').  Replace it with your real API key "
-            "from https://platform.openai.com/account/api-keys."
-        )
-
-    # Instantiate client with API key
-    client = OpenAI(api_key=api_key)
-    # ------------------------------------------------------------------
-    # Allow optional override of the API base URL and version.
-    # Priority (highest → lowest):
-    #   1. Explicit environment variables (OPENAI_BASE_URL, OPENAI_API_BASE,
-    #      OPENAI_API_VERSION) so that users can control endpoints without a
-    #      config file.
-    #   2. Values from optional config file (pdf-ocr-pipeline.ini).
-    # ------------------------------------------------------------------
-
-    # Base URL
-    api_base = (
-        os.environ.get("OPENAI_BASE_URL")
-        or os.environ.get("OPENAI_API_BASE")
-        or _config.get("api_base")
-    )
-    if api_base:
-        try:
-            setattr(client, "base_url", api_base)
-        except Exception:
-            # Some client versions still use `api_base` – fall back.
-            try:
-                setattr(client, "api_base", api_base)
-            except Exception:
-                logger.debug("Failed to set api_base/base_url on client: %s", api_base)
-
-    # API version (Azure‑style deployments)
-    api_version = os.environ.get("OPENAI_API_VERSION") or _config.get("api_version")
-    if api_version:
-        try:
-            setattr(client, "api_version", api_version)
-        except Exception:
-            logger.debug("Failed to set api_version on client: %s", api_version)
-    return client
+    return _get_client()
 
 
-def process_with_gpt(
-    client: OpenAI,
+def process_with_gpt(  # noqa: D401 – kept public for tests / external callers
+    client: Optional[object],
     text: str,
     prompt: str,
+    *,
     model: Optional[str] = None,
 ) -> Dict[str, Any]:
+    """Thin wrapper around :func:`pdf_ocr_pipeline.llm_client.send`.
+
+    Parameters
+    ----------
+    client:
+        Legacy parameter kept for backward compatibility with existing unit
+        tests.  It is ignored by the new implementation **unless** the caller
+        passes a mock object – in that case the mock is forwarded to
+        :func:`llm_client.send` so that test assertions continue to work.
+    text:
+        OCR‑extracted text.
+    prompt:
+        Prompt template.
+    model:
+        Optional model override.
     """
-    Process OCR text with GPT-4o using the provided prompt.
 
-    Args:
-        client: OpenAI client instance
-        text: The OCR text to process
-        prompt: The prompt to guide GPT-4o's analysis
+    logger.info("Sending text to LLM for analysis (len=%s)", len(text))
 
-    Returns:
-        The JSON response from the model
-    """
-    logger.info("Sending text to GPT-4o for analysis...")
-
-    # Determine which model to use: CLI arg overrides config, fall back to default
     model_name = model or _config.get("model", "gpt-4o")
+
     combined_prompt = f"{prompt}\n\nHere is the text to analyze:\n\n{text}"
 
     messages = [
@@ -136,29 +86,12 @@ def process_with_gpt(
         {"role": "user", "content": combined_prompt},
     ]
 
-    try:
-        response = client.chat.completions.create(
-            model=model_name,
-            response_format={"type": "json_object"},
-            messages=messages,
-        )
+    # Forward *client* only if supplied (primarily for unit‑tests).
+    send_kwargs = {"model": model_name}
+    if client is not None:
+        send_kwargs["client"] = client  # type: ignore[arg-type]
 
-        # Extract the JSON content from the response
-        try:
-            content = response.choices[0].message.content
-            if content:
-                # json.loads returns Any, so cast to expected dict
-                return cast(Dict[str, Any], json.loads(content))
-            else:
-                return {"error": "Empty response from GPT-4o"}
-        except (json.JSONDecodeError, AttributeError) as e:
-            logger.error(f"Error parsing GPT-4o response: {e}")
-            return {"error": f"Failed to parse response: {str(e)}"}
-    except Exception as e:
-        # Handle API errors (timeout, rate limit, etc.)
-        error_msg = str(e)
-        logger.error(f"Error calling OpenAI API: {error_msg}")
-        return {"error": f"API error: {error_msg}"}
+    return cast(Dict[str, Any], llm_send(messages, **send_kwargs))
 
 
 def read_input() -> List[Dict[str, Any]]:
@@ -245,8 +178,7 @@ def main() -> None:
         logger.debug("Verbose flag enabled – root log‑level set to DEBUG")
 
     try:
-        # Set up OpenAI client
-        logger.debug("summarize.main loaded from: %s", __file__)
+        # Obtain (and thus validate) client once – kept for backward‑compatibility
         client = setup_openai_client()
 
         # Read input
@@ -265,7 +197,7 @@ def main() -> None:
 
             logger.info(f"Processing text from: {file_name}")
 
-            # Process with GPT
+            # Process with GPT – *client* parameter kept as None for new API
             analysis = process_with_gpt(client, ocr_text, args.prompt)
 
             # Add file information to the result
