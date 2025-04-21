@@ -29,24 +29,24 @@ Done‑when** to guide implementers.
 
 ### 15 API / Public surface
 
-- [ ] **15.1 `ProcessSettings` dataclass**  
+- [x] **15.1 `ProcessSettings` dataclass**  
   • *Why* prevent parameter creep in `process_pdf`.  
   • *Where* `src/pdf_ocr_pipeline/__init__.py`.  
   • *How* introduce frozen `@dataclass(slots=True)` with defaults; allow passing
     `cfg` param; raise on mixed usage.  
   • *Done‑when* new tests cover cfg path; old signature still works.
 
-- [ ] **15.2 Lazy exports** (`__getattr__`)  
+- [x] **15.2 Lazy exports** (`__getattr__`)  
   • *Why* remove manual `__all__` sync.  
   • *How* see code snippet in backlog description.  
   • *Done‑when* mypy passes with new import style.
 
-- [ ] **15.3 Segmentation typing** – use `Tuple[int, int]` for `pages`.
+- [x] **15.3 Segmentation typing** – use `Tuple[int, int]` for `pages`.
 
 ### 16 Logging
 
-- [ ] Configure only handler in `get_logger`; add `set_root_level`.  
-  *Done‑when* CLI still honours `--log-level` (to be added).
+- [x] Configure only handler in `get_logger`; add `set_root_level`.  
+  *Done‑when* CLI honours `--log-level`, `--verbose`/`--quiet` flags via `set_root_level`.
 
 ### 17 LLM client
 
@@ -84,4 +84,13 @@ Done‑when** to guide implementers.
 
 - Asyncio‑based OCR.  
 - PNG raster + NamedTemporaryFile flow.  
-- Convert results to attrs/pydantic models for IDE autocompletion.
+- Convert results to attrs/pydantic models for IDE autocompletion.  
+- End-to-end integration tests  
+- Caching & incremental runs  
+- Docker / container support  
+- REST API / server mode  
+- Metrics & monitoring  
+- PDF-specific pre-processing  
+- Encrypted PDF handling  
+- UI-driven segmentation feedback  
+- Strict type coverage & linting  
