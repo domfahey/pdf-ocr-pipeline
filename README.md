@@ -161,12 +161,16 @@ You can also use the pipeline directly from Python:
 
 ```python
 from pdf_ocr_pipeline import process_pdf
+from pdf_ocr_pipeline.types import ProcessSettings
 
 # Pure OCR
-ocr = process_pdf("invoice.pdf")
+ocr = process_pdf("invoice.pdf", settings=ProcessSettings())
 
 # OCR + segmentation via GPT
-segments = process_pdf("closing_package.pdf", analyze=True)
+segments = process_pdf(
+    "closing_package.pdf",
+    settings=ProcessSettings(analyze=True),
+)
 ```
 
 See the `examples/` directory for more in‑depth examples.
@@ -174,10 +178,12 @@ See the `examples/` directory for more in‑depth examples.
 ```python
 from pathlib import Path
 from pdf_ocr_pipeline import process_pdf
+from pdf_ocr_pipeline.types import ProcessSettings
 
-# Pure OCR
+# Pure OCR with DPI and language override
 pdf_path = Path('document.pdf')
-ocr_result = process_pdf(pdf_path, dpi=300, lang='eng')
+settings = ProcessSettings(dpi=300, lang='eng')
+ocr_result = process_pdf(pdf_path, settings=settings)
 print(ocr_result)
 ```
 

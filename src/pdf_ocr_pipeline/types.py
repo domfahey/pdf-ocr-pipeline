@@ -7,7 +7,8 @@ shapes while keeping the public interface 100‑% JSON‑serialisable.
 
 from __future__ import annotations
 
-from typing import TypedDict, List
+from typing import TypedDict, List, Tuple, Optional
+from dataclasses import dataclass
 
 
 class OcrResult(TypedDict):
@@ -21,7 +22,7 @@ class SegmentationDoc(TypedDict, total=False):
     """Single document segment inside a multi‑page PDF."""
 
     title: str
-    pages: List[int]
+    pages: Tuple[int, int]
     summary: str
     recording_reference: str
 
@@ -31,3 +32,14 @@ class SegmentationResult(TypedDict):
 
     documents: List[SegmentationDoc]
     total_pages: int
+
+
+@dataclass
+class ProcessSettings:
+    """Settings for the high-level process_pdf function."""
+
+    analyze: bool = False
+    dpi: Optional[int] = None
+    lang: Optional[str] = None
+    prompt: Optional[str] = None
+    model: Optional[str] = None

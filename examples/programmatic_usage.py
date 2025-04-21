@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from pdf_ocr_pipeline import process_pdf  # noqa: E402
+from pdf_ocr_pipeline.types import ProcessSettings  # noqa: E402
 
 
 # Note: examples kept minimal; process_pdf already includes OCR and optional
@@ -26,7 +27,9 @@ def main():
 
     try:
         print(f"Processing {sample_pdf}...")
-        result = process_pdf(sample_pdf, dpi=300, lang="eng")
+        # Set OCR settings: DPI and language overrides
+        settings = ProcessSettings(dpi=300, lang="eng")
+        result = process_pdf(sample_pdf, settings=settings)
         print(json.dumps(result, ensure_ascii=False, indent=2))
         print("Processing complete!")
     except Exception as e:
