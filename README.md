@@ -157,7 +157,19 @@ See the [API reference](docs/api.md) for details on library functions and the [P
 
 ### Programmatic Usage
 
-You can also use the OCR functionality in your own Python code. See the `examples/` directory for complete examples.
+You can also use the pipeline directly from Python:
+
+```python
+from pdf_ocr_pipeline import process_pdf
+
+# Pure OCR
+ocr = process_pdf("invoice.pdf")
+
+# OCR + segmentation via GPT
+segments = process_pdf("closing_package.pdf", analyze=True)
+```
+
+See the `examples/` directory for more in‑depth examples.
 
 ```python
 from pathlib import Path

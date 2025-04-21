@@ -10,32 +10,11 @@ from pathlib import Path
 # Add the project directory to the Python path to import the package
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from pdf_ocr_pipeline import ocr_pdf  # noqa: E402
+from pdf_ocr_pipeline import process_pdf  # noqa: E402
 
 
-def process_pdf(pdf_path: str, dpi: int = 300, lang: str = "eng") -> dict:
-    """
-    Process a PDF file and return the results as a dictionary.
-
-    Args:
-        pdf_path: Path to the PDF file
-        dpi: Resolution for OCR processing
-        lang: Language code for Tesseract
-
-    Returns:
-        Dictionary with file name and OCR text
-    """
-    path_obj = Path(pdf_path)
-
-    if not path_obj.is_file():
-        raise FileNotFoundError(f"File not found: {pdf_path}")
-
-    text = ocr_pdf(path_obj, dpi=dpi, lang=lang)
-
-    return {
-        "file": path_obj.name,
-        "ocr_text": text,
-    }
+# Note: examples kept minimal; process_pdf already includes OCR and optional
+# segmentation when ``analyze=True``.
 
 
 def main():
