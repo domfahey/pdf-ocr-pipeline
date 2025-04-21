@@ -1,0 +1,14 @@
+{
+  "documents": [
+    {
+      "title": "Warranty Deed",
+      "pages": [1, 3],
+      "summary": "Conveys property from A to B"
+    },
+    {
+      "title": "Mortgage",
+      "pages": [4, 10]
+    }
+  ],
+  "total_pages": 10
+}
