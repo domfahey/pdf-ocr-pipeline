@@ -7,8 +7,13 @@ import argparse
 import json
 import sys
 import os
+
+# builtin
 from typing import Dict, Any, List, cast, Optional
 import logging
+
+# project
+from .logging_utils import get_logger
 
 # internal config/errors must be available before logger use
 try:
@@ -28,8 +33,8 @@ except ImportError:
     except ImportError:
         OpenAI = None  # type: ignore
 
-# Configure logging
-logger = logging.getLogger(__name__)
+# Configure logger via central helper
+logger = get_logger(__name__)
 
 
 def setup_openai_client() -> OpenAI:
@@ -215,16 +220,29 @@ def main() -> None:
         default=default_verbose,
         help="Enable verbose output",
     )
+    parser.add_argument(
+        "-q",
+        "--quiet",
+        action="store_true",
+        default=False,
+        help="Suppress informational logs; only warnings and errors are shown",
+    )
     args = parser.parse_args()
 
-    # Configure detailed logging (default DEBUG)
-    logging.basicConfig(
-        format="%(asctime)s %(name)s %(levelname)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-        level=logging.DEBUG,
-    )
-    if args.verbose:
-        logger.debug("Verbose flag enabled (logging already at DEBUG level)")
+    # ------------------------------------------------------------------
+    # Adjust root logging level once arguments are known
+    # ------------------------------------------------------------------
+
+    root_logger = logging.getLogger()
+
+    if args.verbose and getattr(args, "quiet", False):
+        parser.error("--verbose and --quiet are mutually exclusive")
+
+    if getattr(args, "quiet", False):
+        root_logger.setLevel(logging.WARNING)
+    elif args.verbose:
+        root_logger.setLevel(logging.DEBUG)
+        logger.debug("Verbose flag enabled – root log‑level set to DEBUG")
 
     try:
         # Set up OpenAI client

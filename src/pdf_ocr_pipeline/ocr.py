@@ -4,7 +4,9 @@ Core OCR functionality for PDF OCR Pipeline.
 """
 
 import subprocess
-import logging
+
+# Project‑wide logger setup
+from .logging_utils import get_logger
 
 # stdlib
 from pathlib import Path
@@ -14,7 +16,7 @@ from typing import List, Any
 from .errors import MissingBinaryError, OcrError
 
 # Logger for error messages
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def run_cmd(cmd: List[str], **kwargs: Any) -> subprocess.CompletedProcess:
