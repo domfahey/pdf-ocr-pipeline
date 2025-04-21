@@ -10,29 +10,18 @@ __version__ = "0.1.0"
 
 # Public surface
 from pathlib import Path
-from typing import Optional, Union, cast
+import importlib
+from typing import Union, cast
 
-from .ocr import ocr_pdf
-from .types import OcrResult, SegmentationResult
-
-# Optional GPT helper retained
-try:
-    from .summarize import process_with_gpt  # noqa: F401 (re-export)
-except ImportError:  # pragma: no cover – summarization extras not installed
-    process_with_gpt = None  # type: ignore
-
-from .segmentation import segment_pdf
+from .types import ProcessSettings, OcrResult, SegmentationResult
 from .settings import settings as _settings  # internal singleton
+from .ocr import ocr_pdf
+from .segmentation import segment_pdf
 
 
 def process_pdf(
     path: Union[str, Path],
-    *,
-    analyze: bool = False,
-    dpi: Optional[int] = None,
-    lang: Optional[str] = None,
-    prompt: Optional[str] = None,
-    model: Optional[str] = None,
+    settings: ProcessSettings = ProcessSettings(),
 ) -> Union[SegmentationResult, OcrResult]:
     """High‑level convenience wrapper combining OCR and optional analysis.
 
@@ -51,25 +40,40 @@ def process_pdf(
     if not pdf_path.is_file():
         raise FileNotFoundError(f"File not found: {pdf_path}")
 
-    dpi_val = dpi or _settings.dpi
-    lang_val = lang or _settings.lang
+    dpi_val = settings.dpi or _settings.dpi
+    lang_val = settings.lang or _settings.lang
 
     ocr_text = ocr_pdf(pdf_path, dpi=dpi_val, lang=lang_val)
 
-    if not analyze:
+    if not settings.analyze:
         return cast(OcrResult, {"file": pdf_path.name, "ocr_text": ocr_text})
 
-    prompt_val: str = prompt or _settings.prompt
-
-    seg_json = segment_pdf(ocr_text, prompt_val, model=model or "gpt-4o")
+    prompt_val: str = settings.prompt or _settings.prompt
+    seg_json = segment_pdf(ocr_text, prompt_val, model=settings.model or "gpt-4o")
 
     return cast(SegmentationResult, seg_json)
 
 
-__all__ = [
-    "ocr_pdf",
-    "process_pdf",
-]
+def __getattr__(name: str):
+    if name == "process_with_gpt":
+        try:
+            value = importlib.import_module(".summarize", __name__).process_with_gpt
+        except ImportError:
+            value = None  # summarization extras not installed
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__} has no attribute {name}")
 
-if process_with_gpt is not None:
-    __all__.append("process_with_gpt")
+
+def __dir__():
+    names = ["process_pdf", "ocr_pdf", "segment_pdf"]
+    try:
+        summarize = importlib.import_module(".summarize", __name__)
+        if hasattr(summarize, "process_with_gpt"):
+            names.append("process_with_gpt")
+    except ImportError:
+        pass
+    return names[:]
+
+
+__all__ = __dir__()[:]
