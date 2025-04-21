@@ -27,7 +27,45 @@ text = ocr_pdf(pdf_path, dpi=300, lang="eng")
 print(text)
 ```
 
-## Command-line Interface
+### `process_pdf(path, settings)`
+
+High-level convenience function that runs OCR and (optionally) AI analysis in one call.
+
+**Signature:**
+```python
+from pdf_ocr_pipeline import process_pdf
+from pdf_ocr_pipeline.types import ProcessSettings
+
+settings = ProcessSettings(
+    analyze=False,
+    dpi=None,
+    lang=None,
+    prompt=None,
+    model=None,
+)
+result = process_pdf("document.pdf", settings=settings)
+```
+
+**Parameters:**
+- `path` (`str` or `Path`): Path to the PDF file.
+- `settings` (`ProcessSettings`): Dataclass with options:
+  - `analyze` (`bool`): If `True`, run AI analysis after OCR.
+  - `dpi` (`Optional[int]`): Override OCR resolution (defaults from settings).
+  - `lang` (`Optional[str]`): Override OCR language code.
+  - `prompt` (`Optional[str]`): Custom prompt for AI analysis.
+  - `model` (`Optional[str]`): Model name for AI analysis (e.g. "gpt-4o").
+
+**Returns:**
+- `OcrResult` (when `analyze=False`):
+  ```json
+  {"file": "document.pdf", "ocr_text": "..."}
+  ```
+- `SegmentationResult` (when `analyze=True`): AI analysis JSON.
+
+**Raises:**
+- `FileNotFoundError`: If the PDF path does not exist.
+
+### `process_with_gpt(client, text, prompt, model=None)`
 
 The command-line interface is provided through the `pdf-ocr` command after installation.
 
@@ -81,9 +119,9 @@ result = process_with_gpt(client, text, "Summarize key points and entities.")
 print(result)
 ```
 
-## Output Format
+## Command-line Interface
 
-The output is in JSON format:
+## Output Format
 
 ```json
 [

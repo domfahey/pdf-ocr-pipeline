@@ -6,27 +6,55 @@ This document explains the organization and structure of the PDF OCR Pipeline pr
 
 ```
 pdf-ocr-pipeline/
-├── bin/                   # Executable scripts
-│   └── ocr_pipe.py        # Command-line script (for backward compatibility)
-├── docs/                  # Documentation
-│   ├── api.md             # API reference
-│   └── project_organization.md # This document
-├── examples/              # Example scripts and usage patterns
-│   ├── __init__.py        # Package indicator
-│   ├── process_dir.sh     # Shell script to process directories of PDFs
-│   └── programmatic_usage.py # Example of using the tool in Python code
+├── docs/                  # Documentation site source
+│   ├── index.md           # Home page
+│   ├── quickstart.md      # Minimal Quickstart guide
+│   ├── usage_guide.md     # Full usage guide
+│   ├── api.md             # API overview
+│   ├── project_organization.md # This document
+│   └── troubleshooting.md # Troubleshooting tips
+├── examples/              # Example workflows and scripts
+│   ├── process_dir.sh     # Batch directory processing
+│   ├── ocr_and_analyze.sh  # Combined OCR + AI analysis script
+│   └── programmatic_usage.py # Python integration example
 ├── src/                   # Source code
 │   └── pdf_ocr_pipeline/  # Main package
-│       ├── __init__.py    # Package initialization
-│       ├── __main__.py    # Entry point for running as a module
-│       ├── cli.py         # Command-line interface (concurrent processing, verbose mode)
-│       ├── ocr.py         # Core OCR functionality
-│       └── summarize.py   # AI-powered text analysis (optional OpenAI dependency)
-└── tests/                 # Unit tests
-    ├── __init__.py        # Package indicator
-    ├── test_basic.py      # Basic tests for package imports
-    ├── test_cli.py        # Tests for CLI functionality
-    └── test_ocr.py        # Tests for core functionality
+│       ├── __init__.py    # Exports and process_pdf API
+│       ├── __main__.py    # Entry point for `python -m pdf_ocr_pipeline`
+│       ├── cli.py         # Command-line interface
+│       ├── ocr.py         # Core OCR logic
+│       ├── segmentation.py# Text segmentation routines
+│       ├── summarize.py   # AI-powered text analysis
+│       ├── llm_client.py  # LLM client abstraction
+│       ├── logging_utils.py # Logging helper
+│       ├── settings.py    # Pydantic configuration
+│       ├── templates/     # External prompt templates
+│       │   ├── segment_prompt.txt
+│       │   └── gpt_system_prompt.txt
+│       └── types.py       # TypedDicts and ProcessSettings
+├── tests/                 # Test suite
+│   ├── fixtures/          # Sample files for tests
+│   │   ├── segmentation_golden.json
+│   │   └── test_digital.pdf
+│   ├── test_basic.py      # Package import tests
+│   ├── test_cli.py        # CLI tests
+│   ├── test_ocr.py        # OCR unit tests
+│   ├── test_process_pdf.py # High-level API tests
+│   ├── test_segmentation_golden.py # Segmentation golden tests
+│   ├── test_summarize.py  # Summarizer unit tests
+│   ├── test_end_to_end_llm.py # End-to-end AI tests
+│   └── test_llm_stub.py   # HTTP stub tests
+├── .github/              # GitHub Actions workflows
+│   └── workflows/ci.yml  # CI pipeline configuration
+├── Makefile              # Developer commands
+├── pyproject.toml        # Build system & project metadata
+├── setup.py              # setuptools installation entry point
+├── setup.cfg             # Linter and formatter config
+├── requirements-dev.txt  # Dev dependencies
+├── requirements.lock     # Pinned dependencies
+├── uv.lock               # uv environment lock
+├── todos.md              # Implementation roadmap
+└── README.md             # Project overview and quick examples
 ```
 
 ## Package Design
