@@ -60,17 +60,17 @@ class AppSettings(BaseSettings):
 7.1 Enhance `run_cmd()` to accept `ok_exit_codes=(0,)`, capture stderr by default, raise `CalledProcessError` with decoded message.  
 7.2 Centralise `shutil.which()` check at import time; raise MissingBinaryError early.
 
-- [ ] **8. LLM client abstraction**  
+- [x] **8. LLM client abstraction**  
 8.1 Create `pdf_ocr_pipeline/llm_client.py`  
  • Wrap OpenAI / Azure logic; expose `send(messages, model, **kw) -> dict`.  
 8.2 `process_with_gpt()` becomes a thin wrapper around this client.
 
-- [ ] **9. Testing improvements**  
+- [x] **9. Testing improvements**  
 9.1 Use `pytest‑httpx` (or `respx`) to stub OpenAI endpoint; mark as “network” optional.  
 9.2 Parametrize OCR tests with two fixtures: scanned PDF & digital‑text PDF.  
 9.3 Add pact‑style golden JSON test for segmentation function with mocked LLM.
 
-- [ ] **10. Tooling polish**  
+- [x] **10. Tooling polish**  
 10.1 Switch Flake8 → Ruff in `.pre-commit-config.yaml` (`ruff check --fix`).  
 10.2 Add `Makefile`:
 
