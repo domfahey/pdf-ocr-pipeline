@@ -111,39 +111,39 @@ These items were identified during a second‑pass review.  They are **not**
 required for the current milestone but would further improve quality and
 maintainability.
 
-1. **API / Public surface**
+15. **API / Public surface**
    • Replace the growing `process_pdf()` parameter list with a `ProcessSettings` dataclass.  
    • Switch `__all__` to a lazy `__getattr__` pattern to avoid manual sync.  
    • Refine `SegmentationResult` typing – represent page range as `Tuple[int, int]`.
 
-2. **Logging**  
+16. **Logging**  
    • In `logging_utils.get_logger` configure only the handler; leave the root
      level unchanged unless a dedicated `set_root_level(level)` helper is
      called (used by CLI).
 
-3. **LLM client**  
+17. **LLM client**  
    • Add thread‑safe lock around the singleton factory.  
    • Re‑raise `KeyboardInterrupt` / `BaseException` in `send()`.  
    • Guard against missing `choices[0].message.content` with a clearer error.
 
-4. **OCR path**  
+18. **OCR path**  
    • Consider defaulting `run_cmd(capture_output=False)` and setting pipes at call‑sites.  
    • Replace on‑disk *probe.pdf* with `NamedTemporaryFile` in `_detect_streaming_support()` and pass `-singlefile -f 1 -l 1`.
 
-5. **CLI flags**  
+19. **CLI flags**  
    • Short‑circuit summarizer when OCR text empty so no API key needed.  
    • Replace `--quiet` with `--log-level {DEBUG,INFO,WARNING,ERROR}`.
 
-6. **Tests & CI**  
+20. **Tests & CI**  
    • Add `pytest‑httpx` to dev‑extras so stub tests aren’t skipped in CI.  
    • Run *mypy* inside `make check` and pre‑commit (`--strict`).
 
-7. **Packaging / Distribution**  
+21. **Packaging / Distribution**  
    • Remove obsolete `[tool.flake8]` section from *pyproject.toml*.  
    • Delete redundant *bin/ocr_pipe.py* wrapper; rely on console‑scripts.  
    • Provide an `[llm]` extras‑require for OpenAI/litellm.
 
-8. **Documentation**  
+22. **Documentation**  
    • Remove hard‑coded `site_url` from *mkdocs.yml*; add Quickstart page mirroring `process_pdf` usage.
 
 Nice‑to‑haves / future research  
