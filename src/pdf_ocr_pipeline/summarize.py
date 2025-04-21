@@ -18,7 +18,6 @@ except ImportError:
 
 from .errors import PipelineError, LlmError  # noqa: F401 (future use)
 from .settings import settings
-from .types import SegmentationResult
 
 # Import litellm's OpenAI wrapper or fall back to the 'openai' package
 try:

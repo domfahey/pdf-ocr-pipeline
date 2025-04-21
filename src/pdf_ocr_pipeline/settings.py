@@ -8,8 +8,6 @@ singleton :data:`settings` defined below.
 
 from __future__ import annotations
 
-import os
-from pathlib import Path
 from typing import Any
 
 # Pydantic v2 split BaseSettings into separate package; support both.
@@ -30,8 +28,11 @@ except ImportError:  # pragma: no cover – fall back for environments w/o extra
 
             class Config:
                 @classmethod
-                def customise_sources(cls, settings_cls, init_settings, env_settings, file_secret_settings):  # noqa: E501
+                def customise_sources(
+                    cls, settings_cls, init_settings, env_settings, file_secret_settings
+                ):  # noqa: E501
                     return env_settings, init_settings
+
 
 from pydantic import Field
 
