@@ -3,7 +3,11 @@
 .PHONY: format lint test check
 
 # Use the same Python that is running this script (assumes virtualenv/uv)
+ifneq ($(wildcard .venv/bin/python),)
+PY := .venv/bin/python
+else
 PY := python3
+endif
 
 format:
 	@echo "Running ruff format and black …"
