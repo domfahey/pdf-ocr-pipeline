@@ -83,11 +83,11 @@ check:   lint test
 
 10.3 Document dev workflow in `CONTRIBUTING.md`.
 
-- [ ] **11. Documentation**  
+- [x] **11. Documentation**  
 11.1 Add `docs/api/` with MkDocs‑Material; auto‑generate reference from docstrings.  
 11.2 Write “Troubleshooting” page (Poppler 25, Tesseract langs, API key).
 
-- [ ] **12. CI pipeline**  
+- [x] **12. CI pipeline**  
 12.1 Enable GitHub Actions (or similar):  
  • matrix on py 3.8‑3.12  
  • jobs: lint (ruff), type‑check (mypy), tests, optional end‑to‑end (needs secret).  
