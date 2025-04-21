@@ -78,11 +78,20 @@ def process_with_gpt(  # noqa: D401 – kept public for tests / external callers
 
     combined_prompt = f"{prompt}\n\nHere is the text to analyze:\n\n{text}"
 
+    # Load system prompt from external template
+    try:
+        import importlib.resources as _resources
+
+        system_prompt = (
+            _resources.files("pdf_ocr_pipeline.templates")
+            .joinpath("gpt_system_prompt.txt")
+            .read_text(encoding="utf-8")
+        )
+    except Exception:
+        system_prompt = "You analyze OCR text and return structured JSON data."
+
     messages = [
-        {
-            "role": "system",
-            "content": "You analyze OCR text and return structured JSON data.",
-        },
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": combined_prompt},
     ]
 
