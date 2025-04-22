@@ -1,0 +1,122 @@
+/* Card grid layout */
+.grid.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.grid.cards .card {
+  background-color: var(--md-primary-fg-color--light);
+  border-radius: 0.2rem;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  min-height: 8rem;
+  padding: 1rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.grid.cards a {
+  color: inherit;
+  font-weight: normal;
+  text-decoration: none;
+}
+
+.grid.cards a:hover .card {
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.grid.cards .card .title {
+  color: var(--md-primary-fg-color--dark);
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.grid.cards .card .description {
+  color: var(--md-typeset-color);
+  flex-grow: 1;
+}
+
+/* For dark mode adjustments */
+[data-md-color-scheme="slate"] .grid.cards .card {
+  background-color: var(--md-primary-fg-color--dark);
+}
+
+[data-md-color-scheme="slate"] .grid.cards .card .title {
+  color: var(--md-primary-bg-color);
+}
+
+[data-md-color-scheme="slate"] .grid.cards .card .description {
+  color: var(--md-typeset-color);
+}
+
+/* Improve table readability */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0;
+}
+
+th {
+  background-color: var(--md-primary-fg-color--light);
+  color: var(--md-primary-fg-color--dark);
+  font-weight: bold;
+}
+
+[data-md-color-scheme="slate"] th {
+  background-color: var(--md-primary-fg-color--dark);
+  color: var(--md-primary-bg-color);
+}
+
+th, td {
+  padding: 0.6em;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  text-align: left;
+}
+
+tr:nth-child(even) {
+  background-color: var(--md-default-fg-color--lightest);
+}
+
+[data-md-color-scheme="slate"] tr:nth-child(even) {
+  background-color: var(--md-default-bg-color--darkest);
+}
+
+/* Code block improvements */
+.highlight pre {
+  padding: 1em;
+  border-radius: 0.2rem;
+}
+
+/* Improve headings */
+h1, h2, h3, h4 {
+  font-weight: 600;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+h1 {
+  font-size: 2em;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  padding-bottom: 0.3em;
+}
+
+h2 {
+  font-size: 1.5em;
+}
+
+h3 {
+  font-size: 1.2em;
+}
+
+/* Improve admonitions */
+.admonition {
+  margin: 1.5em 0;
+}
+
+.admonition-title {
+  font-weight: bold;
+}

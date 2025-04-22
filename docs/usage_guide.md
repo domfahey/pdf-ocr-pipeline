@@ -26,16 +26,18 @@ This guide provides detailed instructions on how to use the PDF OCR Pipeline too
 ### From PyPI (Recommended)
 
 ```bash
-# Install uv package manager
+# Install with pip
+pip install pdf-ocr-pipeline
+
+# Or using uv package manager
 pip install uv
-# Install pdf-ocr-pipeline from PyPI into the environment
 uv pip install pdf-ocr-pipeline
 ```
 
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/pdf-ocr-pipeline.git
+git clone https://github.com/pdf-ocr/pdf-ocr-pipeline.git
 cd pdf-ocr-pipeline
 # Install uv package manager and synchronize the project environment
 pip install uv

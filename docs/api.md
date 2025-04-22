@@ -14,8 +14,8 @@ Perform OCR on a PDF file using pdftoppm and tesseract.
 **Returns:**
 - `str`: The recognized text as a Unicode string.
 
-**Exits:**
-- 1: If pdftoppm or tesseract fails.
+**Raises:**
+- Various exceptions if pdftoppm or tesseract fails.
 
 **Example:**
 ```python
@@ -65,25 +65,6 @@ result = process_pdf("document.pdf", settings=settings)
 **Raises:**
 - `FileNotFoundError`: If the PDF path does not exist.
 
-### `process_with_gpt(client, text, prompt, model=None)`
-
-The command-line interface is provided through the `pdf-ocr` command after installation.
-
-**Usage:**
-```
-pdf-ocr [options] file1.pdf [file2.pdf ...]
-```
-
-**Options:**
-- `--dpi DPI`: Set the resolution for OCR processing (default: 300)
-- `-l, --lang LANGUAGE`: Set the language for Tesseract (default: eng)
-- `-v, --verbose`: Enable verbose output
-
-**Example:**
-```bash
-pdf-ocr --dpi 600 -l fra document.pdf > result.json
-```
-
 ## AI‑Powered Analysis Functions
 
 ### `setup_openai_client()`
@@ -96,14 +77,15 @@ Initialize and return an OpenAI client using the `OPENAI_API_KEY` environment va
 **Raises:**
 - `ValueError`: If `OPENAI_API_KEY` is not found
 
-### `process_with_gpt(client, text, prompt)`
+### `process_with_gpt(client, text, prompt, model=None)`
 
 Send OCR text to GPT‑4o for structured analysis.
 
 **Parameters:**
-- `client` (`OpenAI`): OpenAI client instance
+- `client` (`Optional[object]`): OpenAI client instance or mock object (can be None with newer API)
 - `text` (`str`): The OCR‐extracted text to analyze
 - `prompt` (`str`): Instructions guiding the analysis
+- `model` (`Optional[str]`): Model name override (defaults to "gpt-4o")
 
 **Returns:**
 - `dict`: Parsed JSON response (or error info)
@@ -120,6 +102,65 @@ print(result)
 ```
 
 ## Command-line Interface
+
+### pdf-ocr
+
+Extract text from PDF files using OCR.
+
+**Usage:**
+```
+pdf-ocr [options] file1.pdf [file2.pdf ...]
+```
+
+**Options:**
+- `--dpi DPI`: Set the resolution for OCR processing (default: 300)
+- `-l, --lang LANGUAGE`: Set the language for Tesseract (default: eng)
+- `-v, --verbose`: Enable verbose output
+
+**Example:**
+```bash
+pdf-ocr --dpi 600 -l fra document.pdf > result.json
+```
+
+### pdf-ocr-summarize
+
+Process OCR text with GPT-4o and output results as JSON.
+
+**Usage:**
+```
+pdf-ocr-summarize [options]
+```
+
+**Options:**
+- `--prompt PROMPT`: Custom prompt for AI analysis
+- `--pretty`: Format JSON output with indentation
+- `-v, --verbose`: Enable verbose output
+- `-q, --quiet`: Suppress informational logs
+
+**Example:**
+```bash
+pdf-ocr document.pdf | pdf-ocr-summarize --pretty > analysis.json
+```
+
+### pdf-ocr-segment
+
+Segment OCR text using a real-estate specialized prompt.
+
+**Usage:**
+```
+pdf-ocr-segment [options]
+```
+
+**Options:**
+- `--prompt PROMPT`: Custom segmentation prompt template (rarely needed)
+- `--pretty`: Pretty-print JSON output
+- `-v, --verbose`: Enable verbose / debug logging
+- `-q, --quiet`: Suppress info logging (warnings & errors only)
+
+**Example:**
+```bash
+pdf-ocr document.pdf | pdf-ocr-segment --pretty > segments.json
+```
 
 ## Output Format
 

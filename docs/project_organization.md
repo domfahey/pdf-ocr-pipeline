@@ -2,6 +2,12 @@
 
 This document explains the organization and structure of the PDF OCR Pipeline project, following Python best practices.
 
+## Workflow Diagram
+
+![PDF OCR Pipeline Workflow](assets/images/workflow-diagram.md)
+
+The diagram above illustrates the core workflow of the PDF OCR Pipeline, from PDF input through OCR processing to optional AI analysis.
+
 ## Directory Structure
 
 ```

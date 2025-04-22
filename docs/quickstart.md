@@ -5,10 +5,16 @@ Welcome to the Quickstart guide for PDF OCR Pipeline. This minimal page shows yo
 
 ## Installation
 
-Ensure you have Python 3.6+ and Poppler (`pdftoppm`) and Tesseract on your PATH.
+Ensure you have Python 3.8+ and Poppler (`pdftoppm`) and Tesseract on your PATH.
 
 ```bash
+# Install the package
 pip install pdf-ocr-pipeline
+
+# Set up your OpenAI API key for AI features
+export OPENAI_API_KEY="your-api-key"  # Linux/macOS
+# or
+set OPENAI_API_KEY=your-api-key  # Windows
 ```
 
 ## Quick CLI Usage
@@ -20,7 +26,7 @@ Extract text from a PDF and output JSON:
 pdf-ocr document.pdf > ocr_output.json
 ```
 
-### OCR + AI Analysis
+### OCR + AI Analysis
 
 Run OCR and immediately analyze with GPT-4o:
 ```bash
