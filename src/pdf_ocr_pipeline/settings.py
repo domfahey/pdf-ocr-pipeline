@@ -15,12 +15,11 @@ try:
     # Pydantic v2 recommended package
     from pydantic_settings import BaseSettings  # type: ignore
 except ImportError:  # pragma: no cover – fall back for environments w/o extra pkg
-    # Pydantic <2.0 ships BaseSettings in core; in >=2.0 it was split out. We
-    # attempt to import it and if unavailable create a minimal shim that at
-    # least honours environment variables.
+    # Pydantic <2.0 ships BaseSettings in core; in >=2.0 it was split out.
+    # Attempt import; catch any error (including PydanticImportError) and shim.
     try:
         from pydantic import BaseSettings  # type: ignore
-    except (ImportError, AttributeError):  # pragma: no cover
+    except Exception:  # pragma: no cover
         from pydantic import BaseModel
 
         class BaseSettings(BaseModel):  # type: ignore

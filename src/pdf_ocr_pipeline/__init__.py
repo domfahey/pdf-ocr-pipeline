@@ -40,16 +40,33 @@ def process_pdf(
     if not pdf_path.is_file():
         raise FileNotFoundError(f"File not found: {pdf_path}")
 
-    dpi_val = settings.dpi or _settings.dpi
-    lang_val = settings.lang or _settings.lang
+    opts = settings  # local alias for brevity (does not shadow module)
+
+    dpi_val = opts.dpi or _settings.dpi
+    lang_val = opts.lang or _settings.lang
 
     ocr_text = ocr_pdf(pdf_path, dpi=dpi_val, lang=lang_val)
 
-    if not settings.analyze:
+    if not opts.analyze:
         return cast(OcrResult, {"file": pdf_path.name, "ocr_text": ocr_text})
 
-    prompt_val: str = settings.prompt or _settings.prompt
-    seg_json = segment_pdf(ocr_text, prompt_val, model=settings.model or "gpt-4o")
+    # Only forward a prompt if the caller explicitly supplied one **and** it
+    # is non‑empty.  Otherwise let *segment_pdf* fall back to its built‑in
+    # template to avoid accidentally re‑using a generic summarization prompt
+    # that may be present in ``settings.prompt`` (e.g. from a local INI file).
+
+    prompt_val = opts.prompt or ""
+
+    if prompt_val:
+        prompt_arg = prompt_val
+    else:
+        prompt_arg = None  # let segment_pdf pick default template
+
+    seg_json = segment_pdf(
+        ocr_text,
+        prompt_arg,
+        model=opts.model or "gpt-4o",
+    )
 
     return cast(SegmentationResult, seg_json)
 

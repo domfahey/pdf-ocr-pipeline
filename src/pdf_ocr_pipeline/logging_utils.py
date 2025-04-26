@@ -6,12 +6,13 @@ root log‑level via ``--verbose`` / ``--quiet`` flags.
 
 Usage pattern
 -------------
->>> from pdf_ocr_pipeline.logging_utils import get_logger
+>>> from pdf_ocr_pipeline.logging_utils import get_logger, set_root_level
 >>> logger = get_logger(__name__)
 
-The *first* call to :func:`get_logger` configures the *root* logger with a
-simple :class:`logging.StreamHandler`.  Subsequent calls merely return
-``logging.getLogger(name)``.
+The *first* call to :func:`get_logger` attaches a single
+:class:`logging.StreamHandler` to the root logger (if not already added),
+but does *not* adjust the root logger's level.  To change the logging
+verbosity use :func:`set_root_level` (e.g. from a CLI entry point).
 """
 
 from __future__ import annotations
@@ -26,7 +27,7 @@ _DATEFMT: Final[str] = "%Y-%m-%d %H:%M:%S"
 _INITIALISED: bool = False
 
 
-def _initialise_root_logger(level: int) -> None:
+def _initialise_root_logger() -> None:
     """Attach a single *StreamHandler* to the root logger.
 
     The handler is only added once per interpreter session.  We deliberately do
@@ -48,25 +49,22 @@ def _initialise_root_logger(level: int) -> None:
         handler.setFormatter(logging.Formatter(_FORMAT, datefmt=_DATEFMT))
         root.addHandler(handler)
 
-    root.setLevel(level)
+    # Do not adjust root level here; leave it to set_root_level
 
     _INITIALISED = True
 
 
 def get_logger(name: str, *, level: int | None = None) -> logging.Logger:  # noqa: D401
-    """Return a module‑level logger with our global formatting applied.
+    """Return a module-level logger with our global formatting applied.
 
-    The *first* call will configure the root logger.  Additional calls simply
-    retrieve the named logger.  A per‑logger *level* may be provided but is
-    rarely necessary—prefer adjusting the root level instead.
+    The first call will attach the global handler to the root logger
+    (without changing its level). Subsequent calls simply retrieve the
+    named logger. A per-logger *level* may be provided but is rarely
+    necessary—prefer using :func:`set_root_level` to adjust verbosity.
     """
 
-    # If the library is used programmatically root logging is silent except
-    # for *warnings* and *errors*.  Command‑line tools then elevate the level
-    # to INFO or DEBUG as requested by the user.
-    default_level = logging.WARNING
-
-    _initialise_root_logger(default_level)
+    # Ensure the global handler is attached.  Do not adjust root level here.
+    _initialise_root_logger()
 
     logger = logging.getLogger(name)
 
@@ -74,3 +72,11 @@ def get_logger(name: str, *, level: int | None = None) -> logging.Logger:  # noq
         logger.setLevel(level)
 
     return logger
+
+
+def set_root_level(level: int) -> None:
+    """Ensure the global handler is attached and set the root logger level."""
+    # Attach handler if not already configured
+    _initialise_root_logger()
+    # Set root logger level
+    logging.getLogger().setLevel(level)

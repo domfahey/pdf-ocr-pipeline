@@ -1,0 +1,68 @@
+[
+  {
+    "file": "Sample_Title_Search3.pdf",
+    "analysis": {
+      "documents": [
+        {
+          "title": "Notice of Settlement",
+          "pages": [
+            1,
+            3
+          ],
+          "summary": "Notice of Settlement for property at 408 Trinidad Boulevard, involving Michael and Donna Reilly as buyers.",
+          "recording_reference": "File No. 989-2260645"
+        },
+        {
+          "title": "American Land Title Association Owner's Policy",
+          "pages": [
+            4,
+            6
+          ],
+          "summary": "Title policy for George and Linda DiCugno, covering 413 Trinidad Boulevard, issued by First American Title Insurance.",
+          "recording_reference": "Policy No: 5011434-0131314e"
+        },
+        {
+          "title": "Deed",
+          "pages": [
+            7,
+            9
+          ],
+          "summary": "Conveys property at 408 Trinidad Boulevard from Holiday City at Monroe, Inc. to Joseph and Nancy Quieti."
+        },
+        {
+          "title": "Affidavit of Consideration",
+          "pages": [
+            10,
+            10
+          ],
+          "summary": "Affidavit confirming monetary consideration in transferring property at 405 Paradise Road."
+        },
+        {
+          "title": "Deed of Easement",
+          "pages": [
+            11,
+            13
+          ],
+          "summary": "Grants Atlantic City Electric Company easement for utility lines on properties within Monroe Township."
+        },
+        {
+          "title": "Stream Encroachment Permit",
+          "pages": [
+            14,
+            15
+          ],
+          "summary": "Permit for constructing stormwater structures within defined blocks in Monroe Township."
+        },
+        {
+          "title": "Bargain and Sale Deed",
+          "pages": [
+            16,
+            17
+          ],
+          "summary": "Conveys property at 413 Trinidad Boulevard from Hovsons Inc. to Harold and Elizabeth Throneberry."
+        }
+      ],
+      "total_pages": 17
+    }
+  }
+]
