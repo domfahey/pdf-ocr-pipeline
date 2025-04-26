@@ -23,17 +23,19 @@ def process_pdf(
     path: Union[str, Path],
     settings: ProcessSettings = ProcessSettings(),
 ) -> Union[SegmentationResult, OcrResult]:
-    """High‑level convenience wrapper combining OCR and optional analysis.
-
-    Parameters
-    ----------
-    path:
-        Path to the PDF file.
-    analyze:
-        When *True* the function sends the OCR result to the segmentation LLM
-        and returns its JSON output.  When *False* only OCR is performed.
-    dpi, lang, prompt, model:
-        Override defaults from :pymod:`pdf_ocr_pipeline.settings`.
+    """
+    Processes a PDF file with OCR and optionally performs AI-based segmentation analysis.
+    
+    Args:
+        path: Path to the PDF file to process.
+        settings: Optional processing settings, including OCR parameters and analysis options.
+    
+    Returns:
+        An OcrResult dictionary with the filename and extracted text if analysis is disabled,
+        or a SegmentationResult dictionary with segmentation output if analysis is enabled.
+    
+    Raises:
+        FileNotFoundError: If the specified PDF file does not exist.
     """
 
     pdf_path = Path(path)

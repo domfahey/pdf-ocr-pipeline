@@ -31,9 +31,11 @@ logger = get_logger(__name__)
 
 
 def _read_input() -> List[Dict[str, Any]]:
-    """Read JSON array or raw text from *stdin*.
-
-    Returns a list of ``{"file": ..., "ocr_text": ...}`` dictionaries.
+    """
+    Reads OCR input from stdin as either a JSON array or raw text.
+    
+    Returns:
+        A list of dictionaries, each containing "file" and "ocr_text" keys. If the input is not valid JSON, the entire input is treated as a single OCR text blob with an "unknown" file identifier. If the input is a JSON array, it is returned as-is. Non-list JSON input is wrapped as a single document.
     """
 
     raw = sys.stdin.read().strip()
@@ -60,7 +62,11 @@ def _read_input() -> List[Dict[str, Any]]:
 
 
 def main() -> None:  # noqa: WPS231 – CLI assembly is inevitably imperative
-    """Segment OCR text(s) read from *stdin* and emit JSON to *stdout*."""
+    """
+    Runs the CLI tool to segment OCR text from stdin and outputs the results as JSON.
+    
+    Parses command-line arguments for custom prompt templates, JSON formatting, and logging verbosity. Reads OCR text input (raw or JSON) from stdin, segments each document using a segmentation function, and prints the segmentation results as a JSON array to stdout.
+    """
 
     default_verbose = settings.verbose
     default_prompt = None  # let segment_pdf load bundled template unless user overrides
