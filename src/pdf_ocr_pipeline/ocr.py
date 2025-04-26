@@ -11,7 +11,7 @@ from .logging_utils import get_logger
 # stdlib
 
 from pathlib import Path
-from typing import List, Any, Optional, Tuple, Union
+from typing import List, Any, Tuple, Union
 
 # internal
 import shutil
@@ -23,13 +23,10 @@ from .errors import MissingBinaryError, OcrError
 logger = get_logger(__name__)
 
 # ---------------------------------------------------------------------------
-# Detect *once* whether the installed `pdftoppm` can stream image data to
-# STDOUT when the output prefix is "-".  Some Poppler versions silently create
-# files on disk instead, which breaks the piping approach.  Caching the result
-# avoids the try/except overhead on every OCR invocation.
+# Force streaming disabled to avoid silent failures with pdftoppm → tesseract piping.
+# Always use the temporary‑file fallback path for robustness.
 # ---------------------------------------------------------------------------
-
-_STREAMING_SUPPORTED: Optional[bool] = None  # ``None`` → not yet detected
+_STREAMING_SUPPORTED: bool = False
 
 # ---------------------------------------------------------------------------
 # Early binary availability check (skipped under *pytest* to keep tests fast)

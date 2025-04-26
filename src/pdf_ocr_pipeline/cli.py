@@ -11,7 +11,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Local imports
-from .logging_utils import get_logger
+from .logging_utils import get_logger, set_root_level
 from .ocr import ocr_pdf
 from .errors import PipelineError
 from .types import OcrResult
@@ -27,6 +27,12 @@ Logging is configured at runtime to default to DEBUG level with detailed formatt
 """
 logger = get_logger(__name__)
 
+LOG_LEVELS: dict[str, int] = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+}
 
 """
 Command-line interface entrypoint.
@@ -76,20 +82,32 @@ def main() -> None:
         default=False,
         help="suppress informational output; only warnings and errors are shown",
     )
+    parser.add_argument(
+        "--log-level",
+        choices=list(LOG_LEVELS.keys()),
+        help="set root log level",
+    )
     # ------------------------------------------------------------------
     # Apply logging level according to CLI flags
     # ------------------------------------------------------------------
     args = parser.parse_args()
 
-    root_logger = logging.getLogger()
+    # Determine flags for logging, guard against mocks in tests
+    log_level = args.log_level if args.log_level in LOG_LEVELS else None
+    verbose = args.verbose if isinstance(args.verbose, bool) else False
+    quiet = args.quiet if isinstance(args.quiet, bool) else False
 
-    if args.verbose and getattr(args, "quiet", False):
+    # Apply logging level according to CLI flags (--log-level supersedes verbose/quiet)
+    if verbose and quiet:
         parser.error("--verbose and --quiet are mutually exclusive")
-
-    if getattr(args, "quiet", False):
-        root_logger.setLevel(logging.WARNING)
-    elif args.verbose:
-        root_logger.setLevel(logging.DEBUG)
+    if log_level and (verbose or quiet):
+        parser.error("--log-level cannot be used with --verbose/--quiet")
+    if log_level:
+        set_root_level(LOG_LEVELS[log_level])
+    elif quiet:
+        set_root_level(logging.WARNING)
+    elif verbose:
+        set_root_level(logging.DEBUG)
         logger.debug("Verbose flag enabled – root log‑level set to DEBUG")
 
     try:
@@ -130,9 +148,18 @@ def main() -> None:
             for pdf_path in args.pdfs:
                 results.append(completed[pdf_path])
 
-        print(
-            json.dumps(results, ensure_ascii=False, indent=2 if args.verbose else None)
-        )
+        # Emit JSON to stdout.
+        # If the downstream pipe closes early (e.g. `| head`), writing to
+        # stdout raises BrokenPipeError.  Treat that as a normal termination
+        # and exit silently.
+        import contextlib
+
+        with contextlib.suppress(BrokenPipeError):
+            print(
+                json.dumps(
+                    results, ensure_ascii=False, indent=2 if args.verbose else None
+                )
+            )
 
     except PipelineError as exc:
         logger.error(str(exc))

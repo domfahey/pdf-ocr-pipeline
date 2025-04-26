@@ -29,6 +29,7 @@ dependencies = ["openai>=1.75.0", "pydantic>=2.0"]
 [project.scripts]
 pdf-ocr = "pdf_ocr_pipeline.cli:main"
 pdf-ocr-summarize = "pdf_ocr_pipeline.summarize:main"
+pdf-ocr-segment = "pdf_ocr_pipeline.segment_cli:main"
   
 [project.optional-dependencies]
 dev = [
