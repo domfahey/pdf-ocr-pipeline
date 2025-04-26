@@ -19,7 +19,7 @@ except ImportError:  # pragma: no cover – fall back for environments w/o extra
     # Attempt import; catch any error (including PydanticImportError) and shim.
     try:
         from pydantic import BaseSettings  # type: ignore
-    except Exception:  # pragma: no cover
+    except ImportError:  # pragma: no cover
         from pydantic import BaseModel
 
         class BaseSettings(BaseModel):  # type: ignore
