@@ -28,11 +28,10 @@ _INITIALISED: bool = False
 
 
 def _initialise_root_logger() -> None:
-    """Attach a single *StreamHandler* to the root logger.
-
-    The handler is only added once per interpreter session.  We deliberately do
-    **not** rely on :pyfunc:`logging.basicConfig` because re‑invoking it from
-    multiple modules is a common source of duplicate log lines.
+    """
+    Attaches a single StreamHandler with a consistent formatter to the root logger.
+    
+    Ensures the handler is only added once per interpreter session to prevent duplicate log lines, avoiding the use of logging.basicConfig. Does not modify the root logger's level.
     """
 
     global _INITIALISED  # noqa: WPS420 (module‑level state is fine here)
@@ -55,12 +54,17 @@ def _initialise_root_logger() -> None:
 
 
 def get_logger(name: str, *, level: int | None = None) -> logging.Logger:  # noqa: D401
-    """Return a module-level logger with our global formatting applied.
-
-    The first call will attach the global handler to the root logger
-    (without changing its level). Subsequent calls simply retrieve the
-    named logger. A per-logger *level* may be provided but is rarely
-    necessary—prefer using :func:`set_root_level` to adjust verbosity.
+    """
+    Returns a logger with the specified name, ensuring global formatting is applied.
+    
+    On the first call, attaches a single global handler with consistent formatting to the root logger without modifying its level. If a level is provided, sets it on the returned logger instance. Prefer adjusting the root logger's level using `set_root_level` for consistent verbosity control across modules.
+    
+    Args:
+        name: The name of the logger to retrieve.
+        level: Optional log level to set on the returned logger.
+    
+    Returns:
+        A logger instance with the specified name and global formatting.
     """
 
     # Ensure the global handler is attached.  Do not adjust root level here.
@@ -75,7 +79,12 @@ def get_logger(name: str, *, level: int | None = None) -> logging.Logger:  # noq
 
 
 def set_root_level(level: int) -> None:
-    """Ensure the global handler is attached and set the root logger level."""
+    """
+    Attaches the global logging handler if needed and sets the root logger's level.
+    
+    Args:
+        level: The logging level to set for the root logger (e.g., logging.INFO).
+    """
     # Attach handler if not already configured
     _initialise_root_logger()
     # Set root logger level

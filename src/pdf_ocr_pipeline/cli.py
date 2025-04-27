@@ -42,8 +42,9 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     """
-    Parse arguments and perform OCR on one or more PDF files.
-    Outputs a JSON array of {file, ocr_text} objects to stdout.
+    Parses command-line arguments and performs OCR on one or more PDF files, outputting results as a JSON array to standard output.
+    
+    Validates input files, manages logging verbosity, and processes PDFs in parallel. Each result includes the filename and either the extracted OCR text or an error message if processing fails. Exits with status code 1 on unrecoverable errors.
     """
     # ------------------------------------------------------------------
     # CLI argument parsing

@@ -50,12 +50,10 @@ class MissingApiKeyError(RuntimeError):
 
 
 def _get_client() -> "OpenAI":
-    """Instantiate and cache an *OpenAI* client.
-
-    Environment variables inspected:
-    * ``OPENAI_API_KEY`` **(required)**
-    * ``OPENAI_BASE_URL`` / ``OPENAI_API_BASE`` (optional override)
-    * ``OPENAI_API_VERSION``                (optional override)
+    """
+    Returns a singleton OpenAI client instance configured from environment variables.
+    
+    Reads the required API key and optional endpoint or version overrides from the environment. Raises MissingApiKeyError if the API key is missing or appears to be a placeholder, and RuntimeError if no supported OpenAI SDK is installed.
     """
 
     global _client
@@ -115,28 +113,17 @@ def send(
     client: Optional["OpenAI"] = None,
     **kwargs: Any,
 ) -> Dict[str, Any]:
-    """Send *messages* to the chat completion endpoint and return JSON output.
-
-    Parameters
-    ----------
-    messages:
-        List of role/content dicts as expected by the OpenAI chat completion
-        endpoint.
-    model:
-        Model name – defaults to ``gpt-4o``.
-    client:
-        Optional already‑initialised *OpenAI* client (mainly for tests).  When
-        *None* the module‑level singleton returned by :func:`_get_client` is
-        used.
-    **kwargs:
-        Additional keyword arguments passed straight through to
-        ``chat.completions.create`` (e.g. ``max_tokens``).
-
-    Returns
-    -------
-    dict
-        Parsed JSON object produced by the model *or* a dict with an ``error``
-        key when something went wrong.
+    """
+    Sends chat messages to a language model and returns the parsed JSON response.
+    
+    Args:
+        messages: List of dictionaries representing chat messages, each with a role and content.
+        model: Name of the model to use. Defaults to "gpt-4o".
+        client: Optional pre-initialized OpenAI client. If not provided, a singleton client is used.
+        **kwargs: Additional keyword arguments passed to the chat completion API.
+    
+    Returns:
+        A dictionary containing the parsed JSON object from the model's response, or a dictionary with an "error" key if the request fails or the response is invalid.
     """
 
     cli = client or _get_client()

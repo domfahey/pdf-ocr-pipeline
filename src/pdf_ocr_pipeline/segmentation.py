@@ -27,10 +27,18 @@ def segment_pdf(
     client: Optional[object] = None,
     model: str = "gpt-4o",
 ) -> Dict[str, Any]:
-    """Return segmentation JSON for *text* using *prompt*.
-    If no prompt is provided, the default segmentation template is used.
-
-    The implementation is intentionally minimal – real logic lives in the LLM.
+    """
+    Segments OCR-extracted PDF text into structured JSON using an LLM.
+    
+    If no prompt is provided, a default segmentation template is loaded and cached from the package resources. Returns the LLM's JSON output representing the segmented documents.
+    
+    Args:
+        text: The OCR text to segment.
+        prompt: Optional custom prompt to instruct the LLM; if not provided, a default template is used.
+        model: The LLM model identifier.
+    
+    Returns:
+        A dictionary containing the JSON segmentation output from the LLM.
     """
 
     # ------------------------------------------------------------------
