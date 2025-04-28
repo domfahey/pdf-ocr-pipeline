@@ -103,9 +103,10 @@ class TestOcrPdf(unittest.TestCase):
 
         # Select pdf path
         result = ocr_pdf(self.scanned_pdf)
-
+        # Expected tagged output for a single page
+        expected = "<page number 1>\n" "Sample OCR text\n" "</page number 1>"
         # Assertions
-        self.assertEqual(result, "Sample OCR text")
+        self.assertEqual(result, expected)
         self.assertEqual(mock_run_cmd.call_count, 2)
 
     def test_ocr_pdf_success_digital(self, mock_run_cmd):
@@ -125,9 +126,10 @@ class TestOcrPdf(unittest.TestCase):
         from pdf_ocr_pipeline.ocr import ocr_pdf
 
         result = ocr_pdf(self.digital_pdf)
-
+        # Expected tagged output for a single page
+        expected = "<page number 1>\n" "Sample OCR text\n" "</page number 1>"
         # Assertions
-        self.assertEqual(result, "Sample OCR text")
+        self.assertEqual(result, expected)
         self.assertEqual(mock_run_cmd.call_count, 2)
 
     def test_ocr_pdf_pdftoppm_error_scanned(self, mock_run_cmd):

@@ -346,7 +346,9 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
                 )
                 raise OcrError("tesseract failed during streaming fallback") from e
 
-            return (tess_res.stdout or b"").decode("utf-8", errors="replace")
+            # Wrap single-page output in tags
+            text = (tess_res.stdout or b"").decode("utf-8", errors="replace")
+            return f"<page number 1>\n{text}\n</page number 1>"
 
         if not images:
             logger.error("pdftoppm produced no images for %s", pdf_path)
@@ -390,4 +392,8 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
                 (tess_res.stdout or b"").decode("utf-8", errors="replace")
             )
 
-    return "\n\f\n".join(ocr_text_parts)
+    # Wrap each page's OCR text in page-number tags
+    pages: List[str] = []
+    for idx, part in enumerate(ocr_text_parts, start=1):
+        pages.append(f"<page number {idx}>\n{part}\n</page number {idx}>")
+    return "\n".join(pages)
