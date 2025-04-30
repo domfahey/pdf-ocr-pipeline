@@ -110,7 +110,13 @@ class TestOcrPdf(unittest.TestCase):
         self.assertEqual(mock_run_cmd.call_count, 2)
 
     def test_ocr_pdf_success_digital(self, mock_run_cmd):
-        """Same as above but for digital PDF."""
+        """
+        Tests that `ocr_pdf` correctly processes a digital PDF and returns OCR output
+        wrapped with the appropriate page number tag.
+        
+        Simulates successful execution of the underlying commands and verifies that the
+        output matches the expected format for a single-page digital PDF.
+        """
 
         # Mock successful pdftoppm and tesseract runs
         ppm_result = MagicMock(spec=subprocess.CompletedProcess)
@@ -133,7 +139,9 @@ class TestOcrPdf(unittest.TestCase):
         self.assertEqual(mock_run_cmd.call_count, 2)
 
     def test_ocr_pdf_pdftoppm_error_scanned(self, mock_run_cmd):
-        """Test ocr_pdf function when pdftoppm fails."""
+        """
+        Tests that ocr_pdf raises OcrError when pdftoppm fails on a scanned PDF.
+        """
         # Import here to apply patches properly
         from pdf_ocr_pipeline.ocr import ocr_pdf
 
@@ -216,6 +224,9 @@ class TestOcrPdf(unittest.TestCase):
             ocr_pdf(self.scanned_pdf)
 
     def test_ocr_pdf_no_stdout_digital(self, mock_run_cmd):
+        """
+        Tests that ocr_pdf raises OcrError and logs an error when pdftoppm returns no stdout for a digital PDF.
+        """
         from pdf_ocr_pipeline.ocr import ocr_pdf
 
         ppm_result = MagicMock(spec=subprocess.CompletedProcess)
@@ -231,7 +242,11 @@ class TestOcrPdf(unittest.TestCase):
         self.mock_logger.error.assert_called_once()
 
     def test_ocr_pdf_multiple_pages(self, mock_run_cmd):
-        """Test that multi-page PDFs are correctly processed with page number tags."""
+        """
+        Tests that the ocr_pdf function processes multi-page PDFs and wraps each page's OCR text with the correct page number tags.
+        
+        Simulates a multi-page PDF by mocking subprocess calls and file discovery, then verifies that the combined OCR output includes each page's content wrapped in the appropriate tags and that the expected number of commands are executed.
+        """
         # Import here to apply patches properly
         from pdf_ocr_pipeline.ocr import ocr_pdf
 

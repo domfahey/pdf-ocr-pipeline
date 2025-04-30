@@ -100,19 +100,24 @@ def run_cmd(
     capture_output: bool = True,
     **kwargs: Any,
 ) -> subprocess.CompletedProcess:
-    """Run *cmd* and return the :class:`~subprocess.CompletedProcess`.
-
-    Improvements compared to a bare :pyfunc:`subprocess.run` call:
-
-    1. *stderr* is captured by default so that callers can inspect / log it
-       without having to set ``stderr=subprocess.PIPE`` every time.
-    2. Accepts *ok_exit_codes* – a tuple of return codes that are considered
-       successful (defaults to ``(0,)``).
-    3. On *FileNotFoundError* raises :class:`MissingBinaryError` for early
-       detection.
-    4. On unexpected exit code raises :class:`subprocess.CalledProcessError`
-       with captured *stdout* / *stderr* so that the caller can decide how to
-       handle the failure.
+    """
+    Runs a subprocess command with enhanced error handling and output capture.
+    
+    Captures STDERR by default, allows specifying acceptable exit codes, and raises
+    MissingBinaryError if the command is not found. Raises CalledProcessError with
+    captured output if the exit code is not in ok_exit_codes.
+    
+    Args:
+        cmd: The command to execute as a list of arguments.
+        ok_exit_codes: Tuple of exit codes considered successful (default: (0,)).
+        capture_output: If True, captures STDOUT and STDERR (default: True).
+    
+    Returns:
+        The CompletedProcess instance containing execution results.
+    
+    Raises:
+        MissingBinaryError: If the command binary is not found.
+        subprocess.CalledProcessError: If the exit code is not in ok_exit_codes.
     """
 
     # Log the full command for debugging
@@ -160,33 +165,35 @@ def run_cmd(
 
 
 def _wrap_page_text(text: str, page_num: int) -> str:
-    """Wrap page text with standardized page number tags.
-
+    """
+    Wraps OCR text with XML-like tags indicating the page number.
+    
     Args:
-        text: The OCR text for a single page
-        page_num: The page number (1-based)
-
+        text: OCR text for a single page.
+        page_num: The 1-based page number.
+    
     Returns:
-        Text wrapped with page number tags
+        The input text wrapped with <page number N> and </page number N> tags.
     """
     return f"<page number {page_num}>\n{text}\n</page number {page_num}>"
 
 
 def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
     """
-    Perform OCR on a PDF file using pdftoppm and tesseract.
-
+    Performs OCR on a PDF file, returning recognized text for each page wrapped in page number tags.
+    
+    Uses `pdftoppm` to rasterize PDF pages and `tesseract` to extract text, with automatic fallback between streaming and temporary file modes for compatibility. The output for each page is enclosed in `<page number X>...</page number X>` tags, where X is the page number.
+    
     Args:
-        pdf_path: Path of the PDF file to process.
-        dpi: Resolution in DPI for conversion and OCR.
-        lang: Tesseract language code.
-
+        pdf_path: Path to the PDF file to process.
+        dpi: Resolution in DPI for rasterization and OCR (default: 300).
+        lang: Tesseract language code (default: "eng").
+    
     Returns:
-        The recognized text as a Unicode string, with each page wrapped in
-        '<page number X>...</page number X>' tags.
-
-    Exits:
-        1 if pdftoppm or tesseract fails.
+        A Unicode string containing the OCR text for each page, wrapped in page number tags.
+    
+    Raises:
+        OcrError: If OCR processing fails at any stage.
     """
     # Log module path for debugging to confirm correct code version
     from pathlib import Path as _Path
