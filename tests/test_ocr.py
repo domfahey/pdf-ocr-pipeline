@@ -104,7 +104,7 @@ class TestOcrPdf(unittest.TestCase):
         # Select pdf path
         result = ocr_pdf(self.scanned_pdf)
         # Expected tagged output for a single page
-        expected = "<page number 1>\n" "Sample OCR text\n" "</page number 1>"
+        expected = "<page number 1>\nSample OCR text\n</page number 1>"
         # Assertions
         self.assertEqual(result, expected)
         self.assertEqual(mock_run_cmd.call_count, 2)
@@ -127,7 +127,7 @@ class TestOcrPdf(unittest.TestCase):
 
         result = ocr_pdf(self.digital_pdf)
         # Expected tagged output for a single page
-        expected = "<page number 1>\n" "Sample OCR text\n" "</page number 1>"
+        expected = "<page number 1>\nSample OCR text\n</page number 1>"
         # Assertions
         self.assertEqual(result, expected)
         self.assertEqual(mock_run_cmd.call_count, 2)
@@ -229,6 +229,64 @@ class TestOcrPdf(unittest.TestCase):
         with self.assertRaises(OcrError):
             ocr_pdf(self.digital_pdf)
         self.mock_logger.error.assert_called_once()
+
+    def test_ocr_pdf_multiple_pages(self, mock_run_cmd):
+        """Test that multi-page PDFs are correctly processed with page number tags."""
+        # Import here to apply patches properly
+        from pdf_ocr_pipeline.ocr import ocr_pdf
+
+        # Mock pdftoppm to produce multiple image files
+        ppm_result = MagicMock(spec=subprocess.CompletedProcess)
+        ppm_result.stdout = b"ppm_image_data"
+        ppm_result.returncode = 0
+
+        # Set up multiple test page results
+        page1_text = "Page one content"
+        page2_text = "Page two content"
+        page3_text = "Page three content"
+
+        # Create a sequence of mock responses for each page
+        tess_result1 = MagicMock(spec=subprocess.CompletedProcess)
+        tess_result1.stdout = page1_text.encode("utf-8")
+        tess_result1.returncode = 0
+
+        tess_result2 = MagicMock(spec=subprocess.CompletedProcess)
+        tess_result2.stdout = page2_text.encode("utf-8")
+        tess_result2.returncode = 0
+
+        tess_result3 = MagicMock(spec=subprocess.CompletedProcess)
+        tess_result3.stdout = page3_text.encode("utf-8")
+        tess_result3.returncode = 0
+
+        # Set up the sequence of responses
+        mock_run_cmd.side_effect = [
+            ppm_result,
+            tess_result1,
+            tess_result2,
+            tess_result3,
+        ]
+
+        # Mock Path.glob to return multiple image file paths
+        with patch("pathlib.Path.glob") as mock_glob:
+            mock_glob.return_value = [
+                Path("/tmp/page-01.ppm"),
+                Path("/tmp/page-02.ppm"),
+                Path("/tmp/page-03.ppm"),
+            ]
+
+            # Call the function under test
+            result = ocr_pdf(self.digital_pdf)
+
+        # Expected output with correct page number tags
+        expected = (
+            f"<page number 1>\n{page1_text}\n</page number 1>\n"
+            f"<page number 2>\n{page2_text}\n</page number 2>\n"
+            f"<page number 3>\n{page3_text}\n</page number 3>"
+        )
+
+        # Assertions
+        self.assertEqual(result, expected)
+        self.assertEqual(mock_run_cmd.call_count, 4)  # 1 pdftoppm + 3 tesseract calls
 
 
 if __name__ == "__main__":
