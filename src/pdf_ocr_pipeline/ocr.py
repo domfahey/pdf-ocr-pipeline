@@ -159,6 +159,19 @@ def run_cmd(
     return proc
 
 
+def _wrap_page_text(text: str, page_num: int) -> str:
+    """Wrap page text with standardized page number tags.
+
+    Args:
+        text: The OCR text for a single page
+        page_num: The page number (1-based)
+
+    Returns:
+        Text wrapped with page number tags
+    """
+    return f"<page number {page_num}>\n{text}\n</page number {page_num}>"
+
+
 def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
     """
     Perform OCR on a PDF file using pdftoppm and tesseract.
@@ -169,7 +182,8 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
         lang: Tesseract language code.
 
     Returns:
-        The recognized text as a Unicode string.
+        The recognized text as a Unicode string, with each page wrapped in
+        '<page number X>...</page number X>' tags.
 
     Exits:
         1 if pdftoppm or tesseract fails.
@@ -346,7 +360,9 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
                 )
                 raise OcrError("tesseract failed during streaming fallback") from e
 
-            return (tess_res.stdout or b"").decode("utf-8", errors="replace")
+            # Wrap single-page output in tags
+            text = (tess_res.stdout or b"").decode("utf-8", errors="replace")
+            return _wrap_page_text(text, 1)
 
         if not images:
             logger.error("pdftoppm produced no images for %s", pdf_path)
@@ -390,4 +406,8 @@ def ocr_pdf(pdf_path: Path, dpi: int = 300, lang: str = "eng") -> str:
                 (tess_res.stdout or b"").decode("utf-8", errors="replace")
             )
 
-    return "\n\f\n".join(ocr_text_parts)
+    # Wrap each page's OCR text in page-number tags
+    pages: List[str] = []
+    for idx, part in enumerate(ocr_text_parts, start=1):
+        pages.append(_wrap_page_text(part, idx))
+    return "\n".join(pages)

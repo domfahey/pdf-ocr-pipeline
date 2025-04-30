@@ -50,9 +50,9 @@ Done‑when** to guide implementers.
 
 ### 17 LLM client
 
-- [ ] Thread‑safe singleton lock.  
-- [ ] Re‑raise `KeyboardInterrupt` / `BaseException`.  
-- [ ] Validate response schema.
+- [x] Thread‑safe singleton lock.  
+- [x] Re‑raise `KeyboardInterrupt` / `BaseException`.  
+- [x] Validate response schema.
 
 ### 18 OCR path
 

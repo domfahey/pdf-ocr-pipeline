@@ -65,3 +65,4 @@ venv.bak/
 output.json
 *.ppm
 *.png
+.aider*
