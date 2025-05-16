@@ -86,15 +86,12 @@ Ensure the required external tools are installed:
 
 ### Command Line
 
-After installation, you can use either the module directly, the installed entry point, or via uv:
+After installation, you can run the `pdf-ocr` command directly or via uv:
 
 Basic usage:
 
 ```bash
-# Using the module directly
-python ocr_pipe.py path/to/document.pdf > result.json
-
-# Using the installed entry point
+# Using the `pdf-ocr` command
 pdf-ocr path/to/document.pdf > result.json
 
 # Using uv to run the CLI
@@ -104,10 +101,7 @@ uv run pdf-ocr path/to/document.pdf > result.json
 Process multiple files:
 
 ```bash
-# Using the module directly
-python ocr_pipe.py file1.pdf file2.pdf file3.pdf > results.json
-
-# Using the installed entry point
+# Using the `pdf-ocr` command
 pdf-ocr file1.pdf file2.pdf file3.pdf > results.json
 
 # Using uv to run the CLI
@@ -122,7 +116,7 @@ uv run pdf-ocr file1.pdf file2.pdf file3.pdf > results.json
 Example with options:
 
 ```bash
-python ocr_pipe.py --dpi 600 -l fra path/to/french_document.pdf > result.json
+pdf-ocr --dpi 600 -l fra path/to/french_document.pdf > result.json
 ```
 
 ### AI-Powered Text Analysis
@@ -299,8 +293,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 1. Fork the repository
 2. Create your feature branch: `git checkout -b feature/amazing-feature`
-3. Format your code: `black ocr_pipe.py`
-4. Run linters: `flake8 ocr_pipe.py` and `mypy ocr_pipe.py`
+3. Format your code: `black .`
+4. Run linters: `flake8` and `mypy`
 5. Commit your changes: `git commit -m 'Add amazing feature'`
 6. Push to the branch: `git push origin feature/amazing-feature`
 7. Open a Pull Request
@@ -323,7 +317,7 @@ pdf-ocr-pipeline/
 ├── Makefile               # Development task automation
 ├── README.md              # This documentation
 ├── bin/                   # Executable scripts
-│   ├── ocr_pipe.py        # OCR command-line script
+│   ├── pdf-ocr            # OCR command-line script
 │   └── summarize_text.py  # Text analysis command-line script
 ├── docs/                  # Documentation
 │   ├── api.md              # API reference
@@ -333,7 +327,7 @@ pdf-ocr-pipeline/
 │   ├── ocr_and_analyze.sh # Combined OCR and analysis script
 │   ├── process_dir.sh     # Directory processing script
 │   └── programmatic_usage.py # Example of programmatic usage
-├── ocr_pipe.py            # Symlink for backward compatibility
+├── pdf-ocr                # CLI entry point
 ├── pyproject.toml         # Modern Python project configuration
 ├── requirements-dev.txt   # Development dependencies
 ├── requirements.lock      # Locked dependencies
