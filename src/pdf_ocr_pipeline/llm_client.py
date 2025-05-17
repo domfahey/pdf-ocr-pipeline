@@ -21,7 +21,7 @@ from .logging_utils import get_logger
 
 logger = get_logger(__name__)
 
-# Lock to ensure thread-safe client instantiation
+# Lock to ensure thread-safe client instantiation and caching
 _client_lock = threading.Lock()
 # Singleton client instance (protected by _client_lock)
 _client: Optional[Any] = None
@@ -62,8 +62,14 @@ def _get_client() -> "OpenAI":
     # Fast path: return existing client
     if _client is not None:
         return _client
+
     # Thread-safe client initialization
+    # Re-check inside the lock in case another thread created the client
     with _client_lock:
+        # Another thread may have initialised the client while we were waiting
+        if _client is not None:
+            return _client
+
         if OpenAI is None:  # pragma: no cover – import guard
             raise RuntimeError(
                 "Neither 'litellm' nor 'openai' package is installed.  "
@@ -78,29 +84,32 @@ def _get_client() -> "OpenAI":
 
         client = OpenAI(api_key=api_key)  # type: ignore[call-arg]
 
-    # Optional endpoint overrides (e.g. Azure proxy / self‑hosted gateway)
-    api_base = os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE")
-    if api_base:
-        for attr in ("base_url", "api_base"):
+        # Optional endpoint overrides (e.g. Azure proxy / self‑hosted gateway)
+        api_base = os.getenv("OPENAI_BASE_URL") or os.getenv("OPENAI_API_BASE")
+        if api_base:
+            for attr in ("base_url", "api_base"):
+                try:
+                    setattr(client, attr, api_base)
+                except Exception:  # pragma: no cover – attribute names vary per SDK
+                    pass
+
+        api_version = os.getenv("OPENAI_API_VERSION")
+        if api_version:
             try:
-                setattr(client, attr, api_base)
-            except Exception:  # pragma: no cover – attribute names vary per SDK
+                setattr(client, "api_version", api_version)
+            except Exception:  # pragma: no cover – same reason as above
                 pass
 
-    api_version = os.getenv("OPENAI_API_VERSION")
-    if api_version:
-        try:
-            setattr(client, "api_version", api_version)
-        except Exception:  # pragma: no cover – same reason as above
-            pass
+        logger.debug(
+            "OpenAI client initialised (api_base=%s, api_version=%s)",
+            api_base,
+            api_version,
+        )
 
-    logger.debug(
-        "OpenAI client initialised (api_base=%s, api_version=%s)", api_base, api_version
-    )
+        # Cache singleton instance before releasing the lock
+        _client = client
 
-    # Cache singleton instance
-    _client = client
-    return client
+    return _client
 
 
 # ---------------------------------------------------------------------------
