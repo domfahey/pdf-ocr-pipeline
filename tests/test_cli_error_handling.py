@@ -110,7 +110,11 @@ class TestCliErrorHandling(unittest.TestCase):
             self.assertEqual(args[0], expected_results)
 
     def test_system_exit_propagation(self):
-        """Test that SystemExit from OCR process is properly propagated."""
+        """
+        Tests that a SystemExit raised during OCR processing is propagated by the CLI.
+        
+        Ensures that if the OCR function raises SystemExit, the exception is not caught or suppressed by the CLI and is instead allowed to propagate.
+        """
         # Set up mock arguments
         mock_args = MagicMock()
         mock_args.pdfs = [Path("file1.pdf")]
@@ -129,7 +133,11 @@ class TestCliErrorHandling(unittest.TestCase):
                 main()
 
     def test_verbose_and_quiet_conflict(self):
-        """Ensure --verbose and --quiet together trigger a parser error."""
+        """
+        Tests that providing both --verbose and --quiet flags causes the CLI to raise a parser error.
+        
+        This test verifies that when both verbosity flags are set, the argument parser's error method is called and a SystemExit is raised.
+        """
         mock_args = MagicMock()
         mock_args.pdfs = [Path("file1.pdf")]
         mock_args.dpi = 300
