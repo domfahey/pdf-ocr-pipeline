@@ -59,10 +59,3 @@ disallow_untyped_defs = true
 disallow_incomplete_defs = true
 files = ["src/pdf_ocr_pipeline"]
 ignore_missing_imports = true
-
-[tool.flake8]
-max-line-length = 88
-# Ignore E203 (black compatibility) and E501 (line length) because
-# our default prompt string intentionally includes long lines and
-# black's formatting keeps them as-is.
-extend-ignore = "E203,E501"
