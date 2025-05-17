@@ -50,12 +50,10 @@ class MissingApiKeyError(RuntimeError):
 
 
 def _get_client() -> "OpenAI":
-    """Instantiate and cache an *OpenAI* client.
-
-    Environment variables inspected:
-    * ``OPENAI_API_KEY`` **(required)**
-    * ``OPENAI_BASE_URL`` / ``OPENAI_API_BASE`` (optional override)
-    * ``OPENAI_API_VERSION``                (optional override)
+    """
+    Returns a singleton OpenAI client instance configured from environment variables.
+    
+    Inspects environment variables for API key and optional endpoint overrides. Ensures thread-safe, lazy initialization and caches the client for reuse. Raises MissingApiKeyError if the API key is missing or invalid.
     """
 
     global _client
