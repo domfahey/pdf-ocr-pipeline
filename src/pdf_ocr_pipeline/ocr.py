@@ -11,7 +11,7 @@ from .logging_utils import get_logger
 # stdlib
 
 from pathlib import Path
-from typing import List, Any, Tuple, Union
+from typing import List, Any, Tuple, Union, Optional
 
 # internal
 import shutil
@@ -23,10 +23,11 @@ from .errors import MissingBinaryError, OcrError
 logger = get_logger(__name__)
 
 # ---------------------------------------------------------------------------
-# Force streaming disabled to avoid silent failures with pdftoppm → tesseract piping.
-# Always use the temporary‑file fallback path for robustness.
+# Whether ``pdftoppm`` supports piping image data directly to ``stdout``.
+# ``None`` means the capability has not been probed yet.  The value is cached
+# after the first call to :func:`ocr_pdf`.
 # ---------------------------------------------------------------------------
-_STREAMING_SUPPORTED: bool = False
+_STREAMING_SUPPORTED: Optional[bool] = None
 
 # ---------------------------------------------------------------------------
 # Early binary availability check (skipped under *pytest* to keep tests fast)
