@@ -115,4 +115,4 @@ The project maintains quality through:
 1. **Linting** with flake8 and Black
 2. **Type checking** with mypy
 3. **Testing** with pytest
-4. **Automation** with tox and Make
+4. **Automation** with tox and Makefile
