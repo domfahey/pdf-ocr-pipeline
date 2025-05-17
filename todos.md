@@ -94,3 +94,16 @@ Done‑when** to guide implementers.
 - Encrypted PDF handling  
 - UI-driven segmentation feedback  
 - Strict type coverage & linting  
+
+### 24 Code cleanup
+- [ ] Factor out duplicated `read_input` logic from **summarize.py** and **segment_cli.py** into a shared helper.
+
+### 25 CLI enhancements
+- [ ] Add `--version` flag to all command-line tools.
+- [ ] Show a progress indicator when processing multiple PDFs.
+
+### 26 Testing
+- [ ] Cover input parsing and logging flags of `summarize` and `segment_cli` with unit tests.
+
+### 27 Documentation
+- [ ] Document optional `pdf-ocr-pipeline.ini` fields with a sample configuration in the README.
