@@ -128,6 +128,23 @@ class TestCliErrorHandling(unittest.TestCase):
             with self.assertRaises(SystemExit):
                 main()
 
+    def test_verbose_and_quiet_conflict(self):
+        """Ensure --verbose and --quiet together trigger a parser error."""
+        mock_args = MagicMock()
+        mock_args.pdfs = [Path("file1.pdf")]
+        mock_args.dpi = 300
+        mock_args.lang = "eng"
+        mock_args.verbose = True
+        mock_args.quiet = True
+        self.mock_args.return_value = mock_args
+
+        with patch(
+            "argparse.ArgumentParser.error", side_effect=SystemExit(2)
+        ) as mock_error:
+            with self.assertRaises(SystemExit):
+                main()
+            mock_error.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()
